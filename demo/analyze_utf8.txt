@@ -1,0 +1,38 @@
+﻿Analyzing demo...                                               
+
+  error - The constructor being called isn't a const constructor - lib\core\theme\app_theme.dart:24:25 - const_with_non_const
+   info - Unnecessary 'const' keyword - lib\core\theme\app_theme.dart:25:17 - unnecessary_const
+  error - Classes can only extend other classes - lib\features\cart\presentation\providers\cart_provider.dart:5:28 - extends_non_class
+  error - Too many positional arguments: 0 expected, but 1 found - lib\features\cart\presentation\providers\cart_provider.dart:6:26 - extra_positional_arguments
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:9:27 - undefined_identifier
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:12:47 - undefined_identifier
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:16:7 - undefined_identifier
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:19:7 - undefined_identifier
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:19:19 - undefined_identifier
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:24:5 - undefined_identifier
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:24:13 - undefined_identifier
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:28:27 - undefined_identifier
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:30:31 - undefined_identifier
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:32:49 - undefined_identifier
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:36:9 - undefined_identifier
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:44:5 - undefined_identifier
+  error - Undefined name 'state' - lib\features\cart\presentation\providers\cart_provider.dart:48:12 - undefined_identifier
+  error - The function 'StateNotifierProvider' isn't defined - lib\features\cart\presentation\providers\cart_provider.dart:52:22 - undefined_function
+  error - Arguments of a constant creation must be constant expressions - lib\features\cart\presentation\screens\cart_screen.dart:77:54 - const_with_non_constant_argument
+  error - The getter 'add_circle' isn't defined for the type 'CupertinoIcons' - lib\features\cart\presentation\screens\cart_screen.dart:77:69 - undefined_getter
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\cart\presentation\screens\cart_screen.dart:94:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\presentation\screens\categories_screen.dart:55:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\home\presentation\screens\main_screen.dart:38:35 - deprecated_member_use
+  error - Target of URI doesn't exist: '../../cart/domain/models/cart_item.dart' - lib\features\order\domain\models\order.dart:1:8 - uri_does_not_exist
+  error - The name 'CartItem' isn't a type, so it can't be used as a type argument - lib\features\order\domain\models\order.dart:8:14 - non_type_as_type_argument
+  error - Classes can only extend other classes - lib\features\order\presentation\providers\order_provider.dart:4:29 - extends_non_class
+  error - Too many positional arguments: 0 expected, but 1 found - lib\features\order\presentation\providers\order_provider.dart:5:27 - extra_positional_arguments
+  error - Undefined name 'state' - lib\features\order\presentation\providers\order_provider.dart:8:5 - undefined_identifier
+  error - Undefined name 'state' - lib\features\order\presentation\providers\order_provider.dart:8:24 - undefined_identifier
+  error - The function 'StateNotifierProvider' isn't defined - lib\features\order\presentation\providers\order_provider.dart:12:24 - undefined_function
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\order\presentation\screens\orders_screen.dart:49:70 - deprecated_member_use
+   info - The import of 'package:flutter/cupertino.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\features\product\presentation\screens\product_list_screen.dart:2:8 - unnecessary_import
+warning - Unused import: '../../domain/models/product.dart' - lib\features\product\presentation\screens\product_list_screen.dart:4:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\profile\presentation\screens\profile_screen.dart:64:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\shared\widgets\product_card.dart:75:45 - deprecated_member_use
+
