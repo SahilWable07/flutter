@@ -5,6 +5,7 @@ import '../../domain/models/product.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../product/presentation/providers/product_providers.dart';
 import '../../../../shared/widgets/product_card.dart';
+import '../../../../shared/utils/animated_popup.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final Product product;
@@ -30,21 +31,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     
     ref.read(cartProvider.notifier).addToCart(widget.product);
     
-    ScaffoldMessenger.of(context).clearSnackBars(); // Ensure only one shows at a time
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: const [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Added to Cart!'),
-          ],
-        ),
-        backgroundColor: Colors.green.shade700,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    AnimatedPopup.show(context, message: 'Added to Cart!');
     
     setState(() => _isAddingToCart = false);
   }
@@ -63,10 +50,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           IconButton(
             icon: const Icon(CupertinoIcons.heart),
             onPressed: () {
-              ScaffoldMessenger.of(context).clearSnackBars();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Saved to Wishlist!'), duration: Duration(seconds: 1)),
-              );
+              AnimatedPopup.show(context, message: 'Saved to Wishlist!', icon: CupertinoIcons.heart_solid, color: Colors.pinkAccent);
             },
           ),
           IconButton(

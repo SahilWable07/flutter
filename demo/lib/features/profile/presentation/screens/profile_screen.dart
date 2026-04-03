@@ -8,19 +8,14 @@ import 'wishlist_screen.dart';
 // Import Auth to access the user session and login screen for logout
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
+import '../providers/user_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Access the current authenticated user session
-    final authState = ref.watch(authProvider);
-    final user = authState.user;
-
-    // Optional: Determine name and email from API response safely
-    final String email = user?['email'] ?? user?['data']?['email'] ?? 'User Email';
-    final String name = user?['name'] ?? user?['data']?['name'] ?? 'My Profile';
+    final userInfoAsyncValue = ref.watch(userInfoProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -28,30 +23,50 @@ class ProfileScreen extends ConsumerWidget {
         centerTitle: true,
         elevation: 0,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Theme.of(context).primaryColor, width: 2),
-              ),
-              child: const CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.indigo,
-                child: Icon(CupertinoIcons.person_solid, size: 50, color: Colors.white),
-              ),
+      body: userInfoAsyncValue.when(
+        data: (user) {
+          final String firstName = user['first_name'] ?? 'User';
+          final String lastName = user['last_name'] ?? '';
+          final String name = '$firstName $lastName'.trim();
+          final String email = user['email'] ?? 'No email';
+          final String phone = user['phone'] ?? 'No phone';
+
+          return _buildProfileBody(context, ref, name, email, phone);
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error: $error')),
+      ),
+    );
+  }
+
+  Widget _buildProfileBody(BuildContext context, WidgetRef ref, String name, String email, String phone) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Center(
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Theme.of(context).primaryColor, width: 2),
+            ),
+            child: const CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.indigo,
+              child: Icon(CupertinoIcons.person_solid, size: 50, color: Colors.white),
             ),
           ),
-          const SizedBox(height: 16),
-          Center(
-            child: Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          ),
-          Center(
-            child: Text(email, style: const TextStyle(color: Colors.grey, fontSize: 16)),
-          ),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        ),
+        Center(
+          child: Text(email, style: const TextStyle(color: Colors.grey, fontSize: 16)),
+        ),
+        Center(
+          child: Text(phone, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+        ),
           const SizedBox(height: 32),
           _buildProfileItem(context, icon: CupertinoIcons.location, title: 'Shipping Addresses', onTap: () {
             Navigator.push(context, _buildSlideTransition(const AddressScreen()));
@@ -89,8 +104,7 @@ class ProfileScreen extends ConsumerWidget {
             ),
           )
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildProfileItem(BuildContext context, {required IconData icon, required String title, required VoidCallback onTap}) {

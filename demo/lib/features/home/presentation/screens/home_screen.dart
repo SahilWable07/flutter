@@ -129,15 +129,15 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildCategories(BuildContext context) {
     final categories = [
-      {'icon': CupertinoIcons.device_phone_portrait, 'label': 'Mobiles'},
-      {'icon': CupertinoIcons.desktopcomputer, 'label': 'Laptops'},
-      {'icon': Icons.checkroom, 'label': 'Fashion'},
-      {'icon': CupertinoIcons.house, 'label': 'Home'},
-      {'icon': CupertinoIcons.camera, 'label': 'Cameras'},
+      {'image': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=200&q=80', 'label': 'Mobiles'},
+      {'image': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=200&q=80', 'label': 'Laptops'},
+      {'image': 'https://images.unsplash.com/photo-1445205170230-053b830160b7?w=200&q=80', 'label': 'Fashion'},
+      {'image': 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=200&q=80', 'label': 'Home'},
+      {'image': 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200&q=80', 'label': 'Cameras'},
     ];
 
     return SizedBox(
-      height: 70,
+      height: 100,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -145,7 +145,7 @@ class HomeScreen extends ConsumerWidget {
         itemCount: categories.length,
         itemBuilder: (context, index) {
           return Padding(
-            padding: const EdgeInsets.only(right: 24),
+            padding: const EdgeInsets.only(right: 20),
             child: InkWell(
               onTap: () {
                 Navigator.push(
@@ -156,11 +156,18 @@ class HomeScreen extends ConsumerWidget {
                 );
               },
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    categories[index]['icon'] as IconData,
-                    color: Theme.of(context).primaryColor,
-                    size: 32,
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      image: DecorationImage(
+                        image: NetworkImage(categories[index]['image'] as String),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -192,7 +199,7 @@ class HomeScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor,
+              color: Theme.of(context).colorScheme.secondary,
               borderRadius: BorderRadius.circular(4),
             ),
             child: const Text('VIEW ALL', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),

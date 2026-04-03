@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/cart_provider.dart';
 import '../../../order/presentation/providers/order_provider.dart';
 import '../../../order/domain/models/order.dart';
+import '../../../profile/presentation/screens/wishlist_screen.dart';
+import '../../../../shared/utils/animated_popup.dart';
 
 class CartScreen extends ConsumerWidget {
   const CartScreen({super.key});
@@ -17,6 +19,13 @@ class CartScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('My Cart'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(CupertinoIcons.heart),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen())),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: cartItems.isEmpty
           ? Center(
@@ -127,9 +136,7 @@ class CartScreen extends ConsumerWidget {
                                     ref.read(ordersProvider.notifier).addOrder(newOrder);
                                     ref.read(cartProvider.notifier).clearCart();
                                     
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Order placed successfully!')),
-                                    );
+                                    AnimatedPopup.show(context, message: 'Order placed successfully!');
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.indigo,

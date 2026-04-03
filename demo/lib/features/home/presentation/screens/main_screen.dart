@@ -29,22 +29,26 @@ class _MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: Container(
-        height: 60,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, -2))
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(CupertinoIcons.home, 'Home', 0),
-            _buildNavItem(CupertinoIcons.person, 'You', 1),
-            _buildNavItem(CupertinoIcons.cart, 'Cart', 2),
-            _buildNavItem(Icons.menu, 'Menu', 3),
-          ],
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          height: 65,
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor,
+            borderRadius: BorderRadius.circular(35),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 8))
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildNavItem(CupertinoIcons.home, 'Home', 0),
+              _buildNavItem(CupertinoIcons.person, 'You', 1),
+              _buildNavItem(CupertinoIcons.cart, 'Cart', 2),
+              _buildNavItem(Icons.grid_view, 'Menu', 3),
+            ],
+          ),
         ),
       ),
     );
@@ -52,55 +56,34 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildNavItem(IconData icon, String label, int index) {
     final isSelected = _currentIndex == index;
-    final color = isSelected ? const Color(0xFF008296) : Colors.black87; // Amazon active cyan
 
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => setState(() => _currentIndex = index),
-        child: Stack(
-          alignment: Alignment.center,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => setState(() => _currentIndex = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+        padding: isSelected ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10) : const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(25),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Top active bar animation
-            Positioned(
-              top: 0,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                height: 4,
-                width: isSelected ? 40 : 0,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF008296),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(4),
-                    bottomRight: Radius.circular(4),
-                  ),
-                ),
-              ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+              child: Icon(icon, key: ValueKey(isSelected), color: Colors.white, size: isSelected ? 24 : 22),
             ),
-            
-            // Icon and Label
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 4),
-                AnimatedScale(
-                  scale: isSelected ? 1.15 : 1.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(icon, color: color, size: 26),
-                ),
-                const SizedBox(height: 2),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
-                  style: TextStyle(
-                    color: color,
-                    fontSize: isSelected ? 11 : 10,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                  child: Text(label),
-                ),
-              ],
-            ),
+            if (isSelected) ...[
+              const SizedBox(width: 6),
+              AnimatedOpacity(
+                opacity: isSelected ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 350),
+                child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+              )
+            ]
           ],
         ),
       ),

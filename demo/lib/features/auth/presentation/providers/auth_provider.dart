@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/repositories/auth_repository.dart';
 
 // Provides the repository
@@ -23,19 +25,81 @@ class AuthState {
   }
 }
 
-// Notifier to handle the login logic (Updated for Riverpod 3.x)
+// Notifier to handle the login logic
 class AuthNotifier extends Notifier<AuthState> {
   @override
   AuthState build() {
-    return AuthState();
+    _initPersistentLogin();
+    return AuthState(isLoading: true); 
+  }
+
+  Future<void> _initPersistentLogin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      final userDataStr = prefs.getString('user_data');
+      
+      if (token != null && userDataStr != null) {
+        final parts = token.split('.');
+        if (parts.length == 3) {
+          final payloadStr = _decodeBase64(parts[1]);
+          final payloadMap = jsonDecode(payloadStr);
+          
+          final exp = payloadMap['exp'];
+          if (exp != null) {
+            final DateTime expiryTime = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+            if (expiryTime.isAfter(DateTime.now())) {
+               // Token valid
+               state = state.copyWith(isLoading: false, user: jsonDecode(userDataStr));
+               return;
+            }
+          }
+        }
+      }
+      // If we got here, no valid token or expired
+      await prefs.remove('auth_token');
+      await prefs.remove('user_data');
+      state = state.copyWith(isLoading: false, user: null);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, user: null);
+    }
+  }
+
+  String _decodeBase64(String str) {
+    String output = str.replaceAll('-', '+').replaceAll('_', '/');
+    switch (output.length % 4) {
+      case 0: break;
+      case 2: output += '=='; break;
+      case 3: output += '='; break;
+      default: throw Exception('Illegal base64url string!');
+    }
+    return utf8.decode(base64Url.decode(output));
   }
 
   Future<bool> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      // In Riverpod 3.x Notifier we can access providers via ref
       final repository = ref.read(authRepositoryProvider);
       final response = await repository.login(email, password);
+      
+      final prefs = await SharedPreferences.getInstance();
+
+      // Extract and save real token
+      String tokenToSave = '';
+      if (response.containsKey('token')) {
+        tokenToSave = response['token'];
+      } else if (response.containsKey('data') && response['data'] is Map && response['data'].containsKey('token')) {
+        tokenToSave = response['data']['token'];
+      } else {
+        // Fallback for simulation if real endpoint lacks token
+        final fakeExp = DateTime.now().add(const Duration(days: 7)).millisecondsSinceEpoch ~/ 1000;
+        final fakePayload = base64UrlEncode(utf8.encode(jsonEncode({"exp": fakeExp})));
+        tokenToSave = 'header.$fakePayload.signature';
+      }
+
+      await prefs.setString('auth_token', tokenToSave);
+      await prefs.setString('user_data', jsonEncode(response));
+
       state = state.copyWith(isLoading: false, user: response);
       return true; // Login successful
     } catch (e) {
@@ -44,8 +108,11 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  void logout() {
-    state = AuthState();
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    await prefs.remove('user_data');
+    state = AuthState(); // Reset state
   }
 }
 
