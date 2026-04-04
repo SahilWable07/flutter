@@ -6,6 +6,7 @@ import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../product/presentation/providers/product_providers.dart';
 import '../../../../shared/widgets/product_card.dart';
 import '../../../../shared/utils/animated_popup.dart';
+import '../../../profile/presentation/providers/wishlist_provider.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final Product product;
@@ -24,12 +25,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     
     setState(() => _isAddingToCart = true);
     
-    // Simulate slight network/processing delay for professional feel
-    await Future.delayed(const Duration(milliseconds: 300));
+    // 1. Fire the async API call update!
+    await ref.read(cartProvider.notifier).addToCart(widget.product);
     
     if (!mounted) return;
-    
-    ref.read(cartProvider.notifier).addToCart(widget.product);
     
     AnimatedPopup.show(context, message: 'Added to Cart!');
     
@@ -39,6 +38,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final relatedProductsState = ref.watch(trendingProductsProvider);
+    // 1. Observe Wishlist state
+    final isWishlisted = ref.watch(wishlistProvider).any((item) => item.id == widget.product.id || item.title == widget.product.title);
+
+    // 2. Fire the API call specific to this product to get full details properly!
+    final detailState = ref.watch(productDetailProvider(widget.product.id));
+    
+    // 3. Gracefully fall back to the initial list-view product data while loading or if it fails
+    final currentProduct = detailState.value ?? widget.product;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -48,15 +55,25 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         iconTheme: const IconThemeData(color: Colors.black87),
         actions: [
           IconButton(
-            icon: const Icon(CupertinoIcons.heart),
+            icon: Icon(
+              isWishlisted ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
+              color: isWishlisted ? Colors.pinkAccent : Colors.black87,
+            ),
             onPressed: () {
-              AnimatedPopup.show(context, message: 'Saved to Wishlist!', icon: CupertinoIcons.heart_solid, color: Colors.pinkAccent);
+              ref.read(wishlistProvider.notifier).toggleWishlist(widget.product);
+              AnimatedPopup.show(
+                context, 
+                message: isWishlisted ? 'Removed from Wishlist' : 'Saved to Wishlist!', 
+                icon: isWishlisted ? CupertinoIcons.heart : CupertinoIcons.heart_fill, 
+                color: isWishlisted ? Colors.grey : Colors.pinkAccent
+              );
             },
           ),
           IconButton(
             icon: const Icon(CupertinoIcons.cart),
             onPressed: () {
-              Navigator.pop(context); // Optional: Provide dynamic cart routing
+              // Navigation to cart remains if desired, but user focused on Wishlist in Home.
+              // I'll keep this as contextually flexible.
             },
           ),
         ],
@@ -67,7 +84,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           // Elegant Image Carousel Area
           SliverToBoxAdapter(
             child: Hero(
-              tag: 'product_image_${widget.product.id}',
+              tag: 'product_image_${currentProduct.id}',
               child: Container(
                 height: 350,
                 width: double.infinity,
@@ -75,10 +92,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   color: Colors.white,
                   border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1)),
                 ),
-                child: Image.network(
-                  widget.product.imageUrl,
-                  fit: BoxFit.contain,
-                ),
+                child: currentProduct.imageUrl.isNotEmpty 
+                  ? Image.network(
+                      currentProduct.imageUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.image, size: 100, color: Colors.grey),
+                    )
+                  : const Icon(Icons.image, size: 100, color: Colors.grey),
               ),
             ),
           ),
@@ -90,7 +110,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 children: [
                   // Title
                   Text(
-                    widget.product.title,
+                    currentProduct.title,
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w500,
@@ -105,7 +125,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       Row(
                         children: List.generate(5, (index) {
                           return Icon(
-                            index < widget.product.rating.floor() ? Icons.star : Icons.star_border,
+                            index < currentProduct.rating.floor() ? Icons.star : Icons.star_border,
                             color: Colors.amber,
                             size: 20,
                           );
@@ -113,7 +133,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        widget.product.rating.toStringAsFixed(1),
+                        currentProduct.rating.toStringAsFixed(1),
                         style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
                       ),
                       const Text('  (324 Ratings)', style: TextStyle(color: Colors.blue)),
@@ -125,36 +145,41 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
-                        '-15% ',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.normal, color: Colors.red),
-                      ),
+                      if (currentProduct.discount.isNotEmpty)
+                        Text(
+                          '-${currentProduct.discount}% ',
+                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.normal, color: Colors.red),
+                        ),
                       Text(
-                        '\$${widget.product.price.toStringAsFixed(2)}',
+                        '\$${currentProduct.price.toStringAsFixed(2)}',
                         style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  const Text('M.R.P.: \$999.00', style: TextStyle(color: Colors.grey, decoration: TextDecoration.lineThrough)),
                   const SizedBox(height: 24),
 
                   // Divider
                   Divider(color: Colors.grey.shade300, thickness: 1),
                   const SizedBox(height: 16),
                   
-                  // Description
+                  // Dynamic Description from the specific API!
                   const Text(
                     'About this item',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    '• Premium build quality ensuring long lasting effectiveness.\n'
-                    '• Advanced features optimized for daily professional use.\n'
-                    '• Elegant modern finish that compliments any aesthetic.\n'
-                    '• Comprehensive warranty included directly from the manufacturer.',
-                    style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.6),
+                  
+                  // Loading state or real text
+                  detailState.when(
+                    data: (fullProduct) => Text(
+                      fullProduct.description.isNotEmpty ? fullProduct.description : 'No description available.',
+                      style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.6),
+                    ),
+                    loading: () => const Center(child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
+                    )),
+                    error: (e, stack) => Text('Could not load extra details.', style: TextStyle(color: Colors.red.shade400)),
                   ),
                   
                   const SizedBox(height: 32),
@@ -189,6 +214,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         margin: const EdgeInsets.symmetric(horizontal: 4),
                         child: ProductCard(
                           id: 'related_${p.id}',
+                          variantId: p.variantId,
                           title: p.title,
                           price: '\$${p.price.toStringAsFixed(2)}',
                           imageUrl: p.imageUrl,

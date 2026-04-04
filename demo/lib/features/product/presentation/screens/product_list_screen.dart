@@ -9,14 +9,20 @@ import '../../../../shared/widgets/shimmer_loading.dart';
 
 class ProductListScreen extends ConsumerWidget {
   final String category;
+  final String? searchQuery;
 
-  const ProductListScreen({super.key, required this.category});
+  const ProductListScreen({
+    super.key, 
+    required this.category,
+    this.searchQuery,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // We can reuse the trending products provider or create a filtered one.
-    // Let's use featured and trending combined, then filter by category locally for mock simplicity.
-    final state = ref.watch(trendingProductsProvider);
+    // If a search query is provided, use the search products API!
+    final state = (searchQuery != null && searchQuery!.isNotEmpty)
+        ? ref.watch(searchProductsProvider(searchQuery!))
+        : ref.watch(trendingProductsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -41,6 +47,7 @@ class ProductListScreen extends ConsumerWidget {
               final product = filtered[index];
               return ProductCard(
                 id: product.id,
+                variantId: product.variantId,
                 title: product.title,
                 price: '\$${product.price.toStringAsFixed(2)}',
                 imageUrl: product.imageUrl,

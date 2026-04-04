@@ -1,21 +1,18 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-class AuthRepository {
-  // Hardcoded client id as requested
-  static const String _clientId = 'a3ea1cda-c735-4798-8219-54bbb07795a9';
-  static const String _baseUrl = 'https://platform-development-dev.157.20.214.214.nip.io/auth/api';
+import 'package:demo/core/config/app_config.dart';
 
+class AuthRepository {
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final url = Uri.parse('$_baseUrl/auth/login');
+    final url = Uri.parse(AppConfig.authUrl);
     
     final response = await http.post(
       url,
       headers: {
         'Accept': 'application/json, text/plain, */*',
         'Content-Type': 'application/json',
-        'client_id': _clientId, // Passing client_id in headers (modify if it needs to be 'X-Client-Id')
-        // Optional headers from your curl
+        'client_id': AppConfig.defaultClientId, 
         'Origin': 'https://development.d3kq8oy4csoq2n.amplifyapp.com',
         'Referer': 'https://development.d3kq8oy4csoq2n.amplifyapp.com/',
       },
@@ -23,7 +20,7 @@ class AuthRepository {
         "email": email,
         "password": password,
         "captchaToken": null,
-        "client_id": _clientId, // Also passing in body just in case the API expects it here
+        "client_id": AppConfig.defaultClientId, 
       }),
     );
 

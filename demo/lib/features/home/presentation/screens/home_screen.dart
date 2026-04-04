@@ -8,7 +8,7 @@ import '../../../product/presentation/providers/product_providers.dart';
 import '../../../product/domain/models/product.dart';
 import '../../../product/presentation/screens/product_detail_screen.dart';
 import '../../../product/presentation/screens/product_list_screen.dart';
-import '../../../cart/presentation/screens/cart_screen.dart';
+import '../../../profile/presentation/screens/wishlist_screen.dart';
 import 'notification_screen.dart';
 import 'search_screen.dart';
 
@@ -31,9 +31,9 @@ class HomeScreen extends ConsumerWidget {
             },
           ),
           IconButton(
-            icon: const Icon(CupertinoIcons.cart),
+            icon: const Icon(CupertinoIcons.heart),
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen()));
             },
           ),
           const SizedBox(width: 8),
@@ -222,6 +222,7 @@ class HomeScreen extends ConsumerWidget {
           margin: const EdgeInsets.symmetric(horizontal: 4),
           child: ProductCard(
             id: product.id,
+            variantId: product.variantId,
             title: product.title,
             price: '\$${product.price.toStringAsFixed(2)}',
             imageUrl: product.imageUrl,
@@ -268,6 +269,7 @@ class HomeScreen extends ConsumerWidget {
             final product = products[index];
             return ProductCard(
               id: "trending_${product.id}",
+              variantId: product.variantId,
               title: product.title,
               price: '\$${product.price.toStringAsFixed(2)}',
               imageUrl: product.imageUrl,

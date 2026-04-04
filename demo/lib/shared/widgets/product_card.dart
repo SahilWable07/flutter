@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/profile/presentation/providers/wishlist_provider.dart';
+import '../../features/product/domain/models/product.dart';
 
-class ProductCard extends StatelessWidget {
+class ProductCard extends ConsumerWidget {
   final String id;
+  final String variantId;
   final String title;
   final String price;
   final String imageUrl;
@@ -12,6 +16,7 @@ class ProductCard extends StatelessWidget {
   const ProductCard({
     super.key,
     required this.id,
+    required this.variantId,
     required this.title,
     required this.price,
     required this.imageUrl,
@@ -21,7 +26,10 @@ class ProductCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Check if this product is in the wishlist
+    final isWishlisted = ref.watch(wishlistProvider).any((item) => item.title == title); // title match for safety since id might vary slightly
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -36,12 +44,14 @@ class ProductCard extends StatelessWidget {
                 children: [
                   Hero(
                     tag: 'product_image_$id',
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Container(color: Colors.grey.shade200, child: const Icon(Icons.broken_image, color: Colors.grey)),
-                    ),
+                    child: imageUrl.isNotEmpty 
+                      ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(color: Colors.grey.shade200, child: const Icon(Icons.broken_image, color: Colors.grey)),
+                        )
+                      : Container(color: Colors.grey.shade200, child: const Icon(Icons.broken_image, color: Colors.grey)),
                   ),
                   if (discount.isNotEmpty && discount != '0')
                     Positioned(
@@ -70,13 +80,33 @@ class ProductCard extends StatelessWidget {
                   Positioned(
                     top: 8,
                     right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
+                    child: GestureDetector(
+                      onTap: () {
+                        // Create a dummy product for toggling since we only have partial info here
+                        final p = Product(
+                          id: id.replaceFirst('trending_', '').replaceFirst('related_', ''), 
+                          variantId: variantId,
+                          title: title, 
+                          price: double.tryParse(price.replaceAll('\$', '')) ?? 0.0, 
+                          imageUrl: imageUrl, 
+                          rating: rating, 
+                          category: 'General', 
+                          discount: discount
+                        );
+                        ref.read(wishlistProvider.notifier).toggleWishlist(p);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isWishlisted ? Icons.favorite : Icons.favorite_border,
+                          color: isWishlisted ? Colors.pinkAccent : Colors.grey,
+                          size: 18,
+                        ),
                       ),
-                      child: const Icon(Icons.favorite_border, color: Colors.grey, size: 16),
                     ),
                   ),
                 ],

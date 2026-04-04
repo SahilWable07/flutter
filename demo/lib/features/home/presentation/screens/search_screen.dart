@@ -19,7 +19,10 @@ class _SearchScreenState extends State<SearchScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ProductListScreen(category: 'Search: $query'),
+          builder: (context) => ProductListScreen(
+            category: 'Search: $query',
+            searchQuery: query,
+          ),
         ),
       );
     }

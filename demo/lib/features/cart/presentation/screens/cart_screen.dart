@@ -78,13 +78,23 @@ class CartScreen extends ConsumerWidget {
                               Row(
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.remove_circle),
+                                    icon: const Icon(CupertinoIcons.minus_circle, size: 24),
                                     onPressed: () => ref.read(cartProvider.notifier).decrementQuantity(item.product.id),
                                   ),
                                   Text('${item.quantity}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                   IconButton(
-                                    icon: const Icon(Icons.add_circle, color: Colors.indigo),
+                                    icon: const Icon(CupertinoIcons.plus_circle, color: Colors.indigo, size: 24),
                                     onPressed: () => ref.read(cartProvider.notifier).addToCart(item.product),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(CupertinoIcons.trash, color: Colors.redAccent, size: 22),
+                                    onPressed: () async {
+                                      await ref.read(cartProvider.notifier).removeFromCart(item.product.id);
+                                      if (context.mounted) {
+                                        AnimatedPopup.show(context, message: 'Item removed from cart', color: Colors.redAccent);
+                                      }
+                                    },
                                   ),
                                 ],
                               ),

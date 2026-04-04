@@ -84,17 +84,31 @@ class AuthNotifier extends Notifier<AuthState> {
       
       final prefs = await SharedPreferences.getInstance();
 
-      // Extract and save real token
+      // Robust token traversal
       String tokenToSave = '';
-      if (response.containsKey('token')) {
-        tokenToSave = response['token'];
-      } else if (response.containsKey('data') && response['data'] is Map && response['data'].containsKey('token')) {
-        tokenToSave = response['data']['token'];
-      } else {
-        // Fallback for simulation if real endpoint lacks token
-        final fakeExp = DateTime.now().add(const Duration(days: 7)).millisecondsSinceEpoch ~/ 1000;
-        final fakePayload = base64UrlEncode(utf8.encode(jsonEncode({"exp": fakeExp})));
-        tokenToSave = 'header.$fakePayload.signature';
+      void findToken(dynamic obj) {
+        if (obj is Map) {
+          final keys = ['token', 'access_token', 'accessToken', 'id_token', 'jwt', 'data'];
+          for (var k in keys) {
+            if (obj.containsKey(k)) {
+               if (obj[k] is String && obj[k].isNotEmpty) {
+                 tokenToSave = obj[k];
+                 return;
+               } else if (obj[k] is Map) {
+                 findToken(obj[k]);
+                 if (tokenToSave.isNotEmpty) return;
+               }
+            }
+          }
+        }
+      }
+      findToken(response);
+      
+      if (tokenToSave.isEmpty) {
+        // Log error if real endpoint lacks token
+        print('CRITICAL: Login success but no token found in response: $response');
+        state = AuthState(isLoading: false, error: 'Authorization error: token not found');
+        return false;
       }
 
       await prefs.setString('auth_token', tokenToSave);
