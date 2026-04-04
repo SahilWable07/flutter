@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/product.dart';
+import '../../domain/models/category.dart';
 
 import 'package:demo/core/config/app_config.dart';
 
@@ -10,6 +11,8 @@ abstract class ProductRepository {
   Future<List<Product>> getTrendingProducts();
   Future<List<Product>> searchProducts(String query);
   Future<Product> getProductById(String id);
+  Future<List<Category>> getCategories();
+  Future<List<Subcategory>> getSubcategories(String categoryId);
 }
 
 class ApiProductRepository implements ProductRepository {
@@ -179,5 +182,64 @@ class ApiProductRepository implements ProductRepository {
       print('Detail API Error: $e');
     }
     throw Exception('Product not found');
+  }
+
+  @override
+  Future<List<Category>> getCategories() async {
+    final clientId = await _getClientId();
+    final token = await _getToken();
+    final baseUrl = AppConfig.categoryUrl(clientId);
+    final url = '$baseUrl/categories?page=1&limit=10';
+    
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Accept': 'application/json, text/plain, */*',
+          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = json.decode(response.body);
+        final List<dynamic> data = decoded['data'] ?? [];
+        return data.map((item) => Category.fromJson(item)).toList();
+      }
+    } catch (e) {
+      print('Category API Error: $e');
+    }
+    return [];
+  }
+
+  @override
+  Future<List<Subcategory>> getSubcategories(String categoryId) async {
+    final clientId = await _getClientId();
+    final token = await _getToken();
+    final url = '${AppConfig.subcategoryUrl(clientId)}/subcategories';
+    
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Accept': 'application/json, text/plain, */*',
+          'Content-Type': 'application/json',
+          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          "category_ids": categoryId, // Keep this as a potential filter
+          "page": 1,
+          "limit": 10
+        }),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = json.decode(response.body);
+        final List<dynamic> data = decoded['data'] ?? [];
+        return data.map((item) => Subcategory.fromJson(item)).toList();
+      }
+    } catch (e) {
+      print('Subcategory API Error: $e');
+    }
+    return [];
   }
 }

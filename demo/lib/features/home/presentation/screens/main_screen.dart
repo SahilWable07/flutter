@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_screen.dart';
 import 'categories_screen.dart';
 import '../../../cart/presentation/screens/cart_screen.dart';
+import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends ConsumerState<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
@@ -37,7 +39,11 @@ class _MainScreenState extends State<MainScreen> {
             color: Theme.of(context).primaryColor,
             borderRadius: BorderRadius.circular(35),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 8))
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              )
             ],
           ),
           child: Row(
@@ -45,7 +51,7 @@ class _MainScreenState extends State<MainScreen> {
             children: [
               _buildNavItem(CupertinoIcons.home, 'Home', 0),
               _buildNavItem(CupertinoIcons.person, 'You', 1),
-              _buildNavItem(CupertinoIcons.cart, 'Cart', 2),
+              _buildNavItem(CupertinoIcons.cart, 'Cart', 2, isCart: true),
               _buildNavItem(Icons.grid_view, 'Menu', 3),
             ],
           ),
@@ -54,7 +60,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index) {
+  Widget _buildNavItem(IconData icon, String label, int index, {bool isCart = false}) {
     final isSelected = _currentIndex == index;
 
     return GestureDetector(
@@ -63,7 +69,9 @@ class _MainScreenState extends State<MainScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 350),
         curve: Curves.easeOutCubic,
-        padding: isSelected ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10) : const EdgeInsets.all(10),
+        padding: isSelected
+            ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
+            : const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: isSelected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(25),
@@ -74,14 +82,30 @@ class _MainScreenState extends State<MainScreen> {
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 350),
               transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
-              child: Icon(icon, key: ValueKey(isSelected), color: Colors.white, size: isSelected ? 24 : 22),
+              child: isCart
+                  ? Consumer(
+                      builder: (context, ref, child) {
+                        final count = ref.watch(cartCountProvider);
+                        return Badge.count(
+                          count: count,
+                          isLabelVisible: count > 0,
+                          backgroundColor: Colors.white,
+                          textColor: Theme.of(context).primaryColor,
+                          child: Icon(icon, key: ValueKey(isSelected), color: Colors.white, size: isSelected ? 24 : 22),
+                        );
+                      },
+                    )
+                  : Icon(icon, key: ValueKey(isSelected), color: Colors.white, size: isSelected ? 24 : 22),
             ),
             if (isSelected) ...[
               const SizedBox(width: 6),
               AnimatedOpacity(
-                opacity: isSelected ? 1.0 : 0.0,
+                opacity: 1.0,
                 duration: const Duration(milliseconds: 350),
-                child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                child: Text(
+                  label,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                ),
               )
             ]
           ],

@@ -239,3 +239,12 @@ final cartTotalProvider = Provider<double>((ref) {
   }
   return total;
 });
+
+final cartCountProvider = Provider<int>((ref) {
+  final cart = ref.watch(cartProvider);
+  int count = 0;
+  for (var item in cart) {
+    count += item.quantity;
+  }
+  return count;
+});

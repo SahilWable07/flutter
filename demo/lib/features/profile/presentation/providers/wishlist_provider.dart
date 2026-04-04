@@ -88,3 +88,7 @@ class WishlistNotifier extends Notifier<List<Product>> {
 final wishlistProvider = NotifierProvider<WishlistNotifier, List<Product>>(() {
   return WishlistNotifier();
 });
+
+final wishlistCountProvider = Provider<int>((ref) {
+  return ref.watch(wishlistProvider).length;
+});

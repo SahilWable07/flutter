@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../product/domain/models/category.dart';
 import '../../../../shared/widgets/product_card.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
 import '../../../product/presentation/providers/product_providers.dart';
@@ -9,6 +10,7 @@ import '../../../product/domain/models/product.dart';
 import '../../../product/presentation/screens/product_detail_screen.dart';
 import '../../../product/presentation/screens/product_list_screen.dart';
 import '../../../profile/presentation/screens/wishlist_screen.dart';
+import '../../../profile/presentation/providers/wishlist_provider.dart';
 import 'notification_screen.dart';
 import 'search_screen.dart';
 
@@ -19,6 +21,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final featuredProductsState = ref.watch(featuredProductsProvider);
     final trendingProductsState = ref.watch(trendingProductsProvider);
+    final categoriesState = ref.watch(categoriesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -31,7 +34,17 @@ class HomeScreen extends ConsumerWidget {
             },
           ),
           IconButton(
-            icon: const Icon(CupertinoIcons.heart),
+            icon: Consumer(
+              builder: (context, ref, child) {
+                final count = ref.watch(wishlistCountProvider);
+                return Badge.count(
+                  count: count,
+                  isLabelVisible: count > 0,
+                  backgroundColor: Colors.red,
+                  child: const Icon(CupertinoIcons.heart),
+                );
+              },
+            ),
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen()));
             },
@@ -47,7 +60,7 @@ class HomeScreen extends ConsumerWidget {
             child: Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: _buildCategories(context),
+              child: _buildCategories(context, categoriesState),
             ),
           ),
           
@@ -127,59 +140,69 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategories(BuildContext context) {
-    final categories = [
-      {'image': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=200&q=80', 'label': 'Mobiles'},
-      {'image': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=200&q=80', 'label': 'Laptops'},
-      {'image': 'https://images.unsplash.com/photo-1445205170230-053b830160b7?w=200&q=80', 'label': 'Fashion'},
-      {'image': 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=200&q=80', 'label': 'Home'},
-      {'image': 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200&q=80', 'label': 'Cameras'},
-    ];
-
-    return SizedBox(
-      height: 100,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 20),
-            child: InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProductListScreen(category: categories[index]['label'] as String),
-                  ),
-                );
-              },
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: DecorationImage(
-                        image: NetworkImage(categories[index]['image'] as String),
-                        fit: BoxFit.cover,
+  Widget _buildCategories(BuildContext context, AsyncValue<List<Category>> categoriesState) {
+    return categoriesState.when(
+      data: (categories) {
+        if (categories.isEmpty) return const SizedBox.shrink();
+        
+        return SizedBox(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              final category = categories[index];
+              return Padding(
+                padding: const EdgeInsets.only(right: 20),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProductListScreen(category: category.name),
                       ),
-                    ),
+                    );
+                  },
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey.shade100,
+                          image: category.imageUrl != null 
+                            ? DecorationImage(
+                                image: NetworkImage(category.imageUrl!),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                        ),
+                        child: category.imageUrl == null 
+                          ? const Icon(CupertinoIcons.square_grid_2x2, size: 24, color: Colors.grey)
+                          : null,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        category.name,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    categories[index]['label'] as String,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+                ),
+              );
+            },
+          ),
+        );
+      },
+      loading: () => const SizedBox(
+        height: 100,
+        child: Center(child: CupertinoActivityIndicator()),
       ),
+      error: (error, stack) => const SizedBox.shrink(),
     );
   }
 
