@@ -148,12 +148,15 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                   final sub = subcategories[index];
                   return GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProductListScreen(category: sub.name),
-                        ),
-                      );
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProductListScreen(
+                              category: sub.name,
+                              subcategoryId: sub.id,
+                            ),
+                          ),
+                        );
                     },
                     child: Column(
                       children: [

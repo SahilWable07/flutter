@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/cart_provider.dart';
 import '../../../order/presentation/providers/order_provider.dart';
 import '../../../order/domain/models/order.dart';
+import '../../../profile/presentation/providers/user_provider.dart';
 import '../../../profile/presentation/screens/wishlist_screen.dart';
+import '../screens/checkout_screen.dart';
 import '../../../../shared/utils/animated_popup.dart';
 
 class CartScreen extends ConsumerWidget {
@@ -128,34 +130,17 @@ class CartScreen extends ConsumerWidget {
                           SizedBox(
                             width: double.infinity,
                             height: 50,
-                            child: Consumer(
-                              builder: (context, ref, _) {
-                                return ElevatedButton(
-                                  onPressed: () {
-                                    final currentCart = ref.read(cartProvider);
-                                    if (currentCart.isEmpty) return;
-                                    
-                                    final newOrder = Order(
-                                      id: DateTime.now().millisecondsSinceEpoch.toString().substring(5),
-                                      date: DateTime.now(),
-                                      items: List.from(currentCart),
-                                      totalAmount: ref.read(cartTotalProvider),
-                                      status: OrderStatus.processing,
-                                    );
-                                    
-                                    ref.read(ordersProvider.notifier).addOrder(newOrder);
-                                    ref.read(cartProvider.notifier).clearCart();
-                                    
-                                    AnimatedPopup.show(context, message: 'Order placed successfully!');
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.indigo,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                  child: const Text('Checkout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                );
-                              }
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (cartItems.isEmpty) return;
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const CheckoutScreen()));
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.indigo,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('Checkout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                             ),
                           ),
                       ],

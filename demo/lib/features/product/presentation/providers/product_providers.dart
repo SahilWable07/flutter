@@ -39,3 +39,15 @@ final subcategoriesProvider = FutureProvider.family<List<Subcategory>, String>((
   final repository = ref.read(productRepositoryProvider);
   return repository.getSubcategories(categoryId);
 });
+
+final subcategoryProductsProvider = FutureProvider.family<List<Product>, String>((ref, subId) async {
+  if (subId.isEmpty) return [];
+  final repository = ref.read(productRepositoryProvider);
+  return repository.getProductsBySubcategory(subId);
+});
+
+final categoryProductsProvider = FutureProvider.family<List<Product>, String>((ref, categoryId) async {
+  if (categoryId.isEmpty) return [];
+  final repository = ref.read(productRepositoryProvider);
+  return repository.getProductsByCategory(categoryId);
+});

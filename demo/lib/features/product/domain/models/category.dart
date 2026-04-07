@@ -16,14 +16,13 @@ class Category {
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
-    // Handling multiple possible JSON mappings from the API
     return Category(
-      id: json['id'] ?? (json['category_id'] ?? '').toString(),
-      name: json['category_name'] ?? (json['name'] ?? ''),
-      icon: json['category_icon'] ?? json['icon'],
-      imageUrl: json['presigned_image_url'] ?? json['imageUrl'],
-      description: json['description'],
-      clientId: (json['client_id'] ?? '').toString(),
+      id: json['id']?.toString() ?? json['category_id']?.toString() ?? '',
+      name: json['category_name']?.toString() ?? json['name']?.toString() ?? '',
+      icon: (json['category_icon_url'] ?? json['category_icon'] ?? json['icon'])?.toString(),
+      imageUrl: (json['category_icon_url'] ?? json['presigned_image_url'] ?? json['imageUrl'])?.toString(),
+      description: json['description']?.toString(),
+      clientId: json['client_id']?.toString() ?? '',
     );
   }
 }
@@ -45,11 +44,11 @@ class Subcategory {
 
   factory Subcategory.fromJson(Map<String, dynamic> json) {
     return Subcategory(
-      id: json['subcategory_id'] ?? (json['id'] ?? '').toString(),
-      parentCategoryId: (json['category_id'] ?? '').toString(),
-      name: json['subcategory_name'] ?? (json['name'] ?? ''),
-      icon: json['subcategory_icon'] ?? json['icon'],
-      imageUrl: json['presigned_image_url'] ?? json['imageUrl'],
+      id: json['id']?.toString() ?? json['subcategory_id']?.toString() ?? '',
+      parentCategoryId: (json['product_category_id'] ?? json['category_id'] ?? '').toString(),
+      name: (json['sub_category_name'] ?? json['subcategory_name'] ?? json['name'] ?? 'Unknown').toString(),
+      icon: (json['sub_category_icon_url'] ?? json['subcategory_icon'] ?? json['icon'])?.toString(),
+      imageUrl: (json['sub_category_icon_url'] ?? json['presigned_image_url'] ?? json['imageUrl'])?.toString(),
     );
   }
 }

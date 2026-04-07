@@ -13,6 +13,8 @@ abstract class ProductRepository {
   Future<Product> getProductById(String id);
   Future<List<Category>> getCategories();
   Future<List<Subcategory>> getSubcategories(String categoryId);
+  Future<List<Product>> getProductsBySubcategory(String subcategoryId);
+  Future<List<Product>> getProductsByCategory(String categoryId);
 }
 
 class ApiProductRepository implements ProductRepository {
@@ -36,7 +38,7 @@ class ApiProductRepository implements ProductRepository {
     }
   }
 
-  Future<List<Product>> _fetchProductsFromApi({String? query}) async {
+  Future<List<Product>> _fetchProductsFromApi({String? query, String? subcategoryId, String? categoryId}) async {
     final token = await _getToken();
     final clientId = await _getClientId();
     final baseUrl = AppConfig.productUrl(clientId);
@@ -45,6 +47,12 @@ class ApiProductRepository implements ProductRepository {
     final Map<String, dynamic> requestBody = {};
     if (query != null && query.isNotEmpty) {
       requestBody['k'] = query;
+    }
+    if (subcategoryId != null && subcategoryId.isNotEmpty) {
+      requestBody['sub_category_ids'] = subcategoryId;
+    }
+    if (categoryId != null && categoryId.isNotEmpty) {
+      requestBody['product_category_ids'] = categoryId;
     }
     
     try {
@@ -57,6 +65,7 @@ class ApiProductRepository implements ProductRepository {
         },
         body: jsonEncode(requestBody),
       );
+      /// (Rest of original _fetchProductsFromApi logic...)
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final decoded = json.decode(response.body);
@@ -126,6 +135,12 @@ class ApiProductRepository implements ProductRepository {
 
   @override
   Future<List<Product>> searchProducts(String query) => _fetchProductsFromApi(query: query);
+
+  @override
+  Future<List<Product>> getProductsBySubcategory(String subcategoryId) => _fetchProductsFromApi(subcategoryId: subcategoryId);
+
+  @override
+  Future<List<Product>> getProductsByCategory(String categoryId) => _fetchProductsFromApi(categoryId: categoryId);
 
   @override
   Future<Product> getProductById(String id) async {

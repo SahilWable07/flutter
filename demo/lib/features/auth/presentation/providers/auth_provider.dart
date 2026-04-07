@@ -124,9 +124,13 @@ class AuthNotifier extends Notifier<AuthState> {
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    await prefs.remove('user_data');
-    state = AuthState(); // Reset state
+    await prefs.clear(); // Clear everything from SharedPreferences
+    
+    // Invalidate providers to force them to re-initialize for the next user
+    // We import them at the top
+    ref.invalidate(authProvider);
+    // Since we are inside AuthNotifier, we reset our own state
+    state = AuthState();
   }
 }
 

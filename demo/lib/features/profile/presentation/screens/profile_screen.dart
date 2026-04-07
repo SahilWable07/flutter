@@ -9,6 +9,8 @@ import 'wishlist_screen.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../providers/user_provider.dart';
+import '../../../cart/presentation/providers/cart_provider.dart';
+import '../../../order/presentation/providers/order_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -85,15 +87,22 @@ class ProfileScreen extends ConsumerWidget {
             width: double.infinity,
             height: 50,
             child: OutlinedButton(
-              onPressed: () {
-                // 1. Clear session
-                ref.read(authProvider.notifier).logout();
+              onPressed: () async {
+                // 1. Invalidate all user-specific data providers
+                ref.invalidate(userInfoProvider);
+                ref.invalidate(cartProvider);
+                ref.invalidate(ordersProvider);
+
+                // 2. Clear session and auth state
+                await ref.read(authProvider.notifier).logout();
                 
-                // 2. Erase routing history and push back to LoginScreen
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false,
-                );
+                // 3. Erase routing history and push back to LoginScreen
+                if (context.mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
+                }
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.redAccent,

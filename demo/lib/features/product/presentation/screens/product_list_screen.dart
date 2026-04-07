@@ -10,19 +10,31 @@ import '../../../../shared/widgets/shimmer_loading.dart';
 class ProductListScreen extends ConsumerWidget {
   final String category;
   final String? searchQuery;
+  final String? subcategoryId;
+  final String? productCategoryId;
 
   const ProductListScreen({
     super.key, 
     required this.category,
     this.searchQuery,
+    this.subcategoryId,
+    this.productCategoryId,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // If a search query is provided, use the search products API!
+    // Priority logic for fetching products:
+    // 1. Search Query
+    // 2. Subcategory (POST API)
+    // 3. Category (POST API)
+    // 4. Defaults to Trending
     final state = (searchQuery != null && searchQuery!.isNotEmpty)
         ? ref.watch(searchProductsProvider(searchQuery!))
-        : ref.watch(trendingProductsProvider);
+        : (subcategoryId != null && subcategoryId!.isNotEmpty)
+            ? ref.watch(subcategoryProductsProvider(subcategoryId!))
+            : (productCategoryId != null && productCategoryId!.isNotEmpty)
+                ? ref.watch(categoryProductsProvider(productCategoryId!))
+                : ref.watch(trendingProductsProvider);
 
     return Scaffold(
       appBar: AppBar(
