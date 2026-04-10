@@ -12,15 +12,13 @@ class AuthRepository {
       headers: {
         'Accept': 'application/json, text/plain, */*',
         'Content-Type': 'application/json',
-        'client_id': AppConfig.defaultClientId, 
-        'Origin': 'https://development.d3kq8oy4csoq2n.amplifyapp.com',
-        'Referer': 'https://development.d3kq8oy4csoq2n.amplifyapp.com/',
+        'client_id': AppConfig.defaultClientId,
+        'Origin': 'https://platform-dev.baap.market',
+        'Referer': 'https://platform-dev.baap.market/',
       },
       body: jsonEncode({
         "email": email,
         "password": password,
-        "captchaToken": null,
-        "client_id": AppConfig.defaultClientId, 
       }),
     );
 

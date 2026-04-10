@@ -46,7 +46,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             AnimatedPopup.show(context, message: 'Please select an address', color: Colors.orange);
             return;
           }
-          if (_currentStep < 2) {
+          if (_currentStep == 1 && _selectedPayment == 'Online Payment') {
+            _placeOrder(cartItems, total, userInfoAsync.value);
+          } else if (_currentStep < 2) {
             setState(() => _currentStep++);
           } else {
             _placeOrder(cartItems, total, userInfoAsync.value);
@@ -72,7 +74,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(
-                  _currentStep == 2 ? 'Place Order' : 'Continue',
+                  _currentStep == 1 && _selectedPayment == 'Online Payment'
+                    ? 'Proceed to Payment'
+                    : (_currentStep == 2 
+                        ? (_selectedPayment == 'Online Payment' ? 'Pay Now' : 'Confirm Order')
+                        : 'Continue'),
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
@@ -126,16 +132,30 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           children: [
             const Text('Select delivery address', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            ...addresses.map((addr) => RadioListTile<UserAddress>(
-                  value: addr,
-                  groupValue: _selectedAddress,
-                  onChanged: (val) => setState(() => _selectedAddress = val),
-                  title: Text(addr.tag, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('${addr.houseNo}, ${addr.street}, ${addr.city}'),
-                  secondary: const Icon(CupertinoIcons.location),
-                  activeColor: Colors.indigo,
-                  contentPadding: EdgeInsets.zero,
-                )),
+            ...addresses.map((addr) {
+              final String addrId = '${addr.tag}_${addr.houseNo}_${addr.zipCode}';
+              final String selectedId = _selectedAddress != null 
+                  ? '${_selectedAddress!.tag}_${_selectedAddress!.houseNo}_${_selectedAddress!.zipCode}' 
+                  : '';
+              
+              return RadioListTile<String>(
+                value: addrId,
+                groupValue: selectedId,
+                onChanged: (val) {
+                  setState(() {
+                    _selectedAddress = addr;
+                  });
+                },
+                title: Text(
+                  addr.tag.isNotEmpty ? addr.tag : 'Address', 
+                  style: const TextStyle(fontWeight: FontWeight.bold)
+                ),
+                subtitle: Text('${addr.houseNo}, ${addr.street}, ${addr.city}'),
+                secondary: const Icon(CupertinoIcons.location, color: Colors.indigo),
+                activeColor: Colors.indigo,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+              );
+            }),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: () => _showAddressForm(context, allAddresses: addresses),
@@ -304,11 +324,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
 
     // 1. Create the order on the backend
-    final orderId = await ref.read(ordersProvider.notifier).createOrder(
-      cartItems: items,
-      total: total,
-      userData: user,
-    );
+    String? orderId;
+    try {
+      orderId = await ref.read(ordersProvider.notifier).createOrder(
+        cartItems: items,
+        total: total,
+        userData: user,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // close loader
+      AnimatedPopup.show(context, message: e.toString().replaceFirst('Exception: ', ''), color: Colors.orange);
+      return;
+    }
 
     if (!mounted) return;
     Navigator.pop(context); // close loader

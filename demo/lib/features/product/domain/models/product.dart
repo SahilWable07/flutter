@@ -9,6 +9,7 @@ class Product {
   final String category;
 
   final String description;
+  final int stockQuantity;
 
   const Product({
     required this.id,
@@ -20,6 +21,7 @@ class Product {
     this.discount = '',
     required this.category,
     this.description = '',
+    this.stockQuantity = 0,
   });
 
   // Factory for potential JSON parsing later
@@ -34,6 +36,7 @@ class Product {
       discount: json['discount'] as String? ?? '',
       category: json['category'] as String,
       description: json['description'] as String? ?? '',
+      stockQuantity: json['stockQuantity'] as int? ?? 0,
     );
   }
 }

@@ -16,6 +16,8 @@ class AppConfig {
   static String subcategoryUrl(String clientId) =>
       '$baseUrl/product-subcategory/client/$clientId';
   static String orderUrl(String clientId) => '$baseUrl/order/client/$clientId';
-  static String paymentGatewayUrl(String clientId) => '$baseUrl/payment-gateway/client/$clientId';
-  static String paymentCredentialsUrl(String clientId) => '$baseUrl/client-payment-credentials/client/$clientId';
+  static String paymentGatewayUrl(String clientId) =>
+      '$baseUrl/payment-gateway/client/$clientId';
+  static String paymentCredentialsUrl(String clientId) =>
+      '$baseUrl/client-payment-credentials/client/$clientId';
 }

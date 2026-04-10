@@ -57,4 +57,16 @@ class UserAddress {
       'zipcode': zipCode, // redundant for compatibility
     };
   }
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserAddress &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          tag == other.tag &&
+          houseNo == other.houseNo &&
+          zipCode == other.zipCode;
+
+  @override
+  int get hashCode => id.hashCode ^ tag.hashCode ^ houseNo.hashCode ^ zipCode.hashCode;
 }

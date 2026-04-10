@@ -19,6 +19,8 @@ class PaymentService {
         headers: {
           'Accept': 'application/json, text/plain, */*',
           'Authorization': 'Bearer $token',
+          'Origin': 'https://platform-dev.baap.market',
+          'Referer': 'https://platform-dev.baap.market/',
         },
       );
 
@@ -53,10 +55,10 @@ class PaymentService {
         "provider_id": providerId,
         "gateway": "easebuzz",
         "reference_id": referenceId,
-        "return_url": "https://development.d3kq8oy4csoq2n.amplifyapp.com/ecommerce/orders?payment_success=true&order_id=$referenceId",
+        "return_url": "https://platform-dev.baap.market/ecommerce/orders?payment_success=true&order_id=$referenceId",
         "payment_mode": "upi",
         "requested_by": userId,
-        "date": DateTime.now().toIso8601String(),
+        "date": DateTime.now().toUtc().toIso8601String(),
         "type": "order",
         "payment_id": ""
       };
@@ -67,20 +69,36 @@ class PaymentService {
           'Accept': 'application/json, text/plain, */*',
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
+          'Origin': 'https://platform-dev.baap.market',
+          'Referer': 'https://platform-dev.baap.market/',
         },
         body: jsonEncode(payload),
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = jsonDecode(response.body);
-        // Assuming the link is in 'data' or similar
-        final String? paymentLink = data['data']?['url'] ?? data['payment_url'] ?? data['url'] ?? data['data'];
+        print('Payment Generation API Response: $data');
 
-        if (paymentLink != null && await canLaunchUrl(Uri.parse(paymentLink))) {
-          await launchUrl(Uri.parse(paymentLink), mode: LaunchMode.externalApplication);
-          return null; // Success (link opened)
+        String? paymentLink;
+        if (data is Map) {
+          final d = data['data'];
+          if (d is Map) {
+            paymentLink = d['url'] ?? d['payment_url'] ?? d['short_url'];
+          } else if (d is String) {
+            paymentLink = d;
+          }
+          paymentLink ??= data['payment_url'] ?? data['url'];
+        }
+
+        print('Extracted Payment Link: $paymentLink');
+
+        if (paymentLink != null && paymentLink.isNotEmpty) {
+          final uri = Uri.parse(paymentLink);
+          // Launching with external application to ensure browser opens
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          return null; // Success
         } else {
-          return 'Could not open payment link';
+          return 'Payment link was empty or invalid';
         }
       } else {
         print('Generate Link Error: ${response.body}');
