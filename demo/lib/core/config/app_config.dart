@@ -1,7 +1,7 @@
 class AppConfig {
   static const String baseUrl =
       'https://platform-development-dev.157.20.214.214.nip.io/auth/api';
-  static const String defaultClientId = 'a3ea1cda-c735-4798-8219-54bbb07795a9';
+  static const String defaultClientId = '621916a4-c731-41b8-851d-06ac039a0c75';
 
   // Service-specific URL helpers
   static String productUrl(String clientId) =>

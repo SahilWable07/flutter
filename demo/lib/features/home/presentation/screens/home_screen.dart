@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../product/domain/models/category.dart';
 import '../../../../shared/widgets/product_card.dart';
 import '../../../../shared/widgets/shimmer_loading.dart';
@@ -24,14 +25,15 @@ class HomeScreen extends ConsumerWidget {
     final categoriesState = ref.watch(categoriesProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF1F9F9), // Light cyan/blue project tint
       appBar: AppBar(
         title: _buildSearchBar(context),
+        backgroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(CupertinoIcons.bell),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen()));
-            },
+            icon: const Icon(Iconsax.notification_bing_copy, color: Colors.black87),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen())),
           ),
           IconButton(
             icon: Consumer(
@@ -40,14 +42,12 @@ class HomeScreen extends ConsumerWidget {
                 return Badge.count(
                   count: count,
                   isLabelVisible: count > 0,
-                  backgroundColor: Colors.red,
-                  child: const Icon(CupertinoIcons.heart),
+                  backgroundColor: Colors.redAccent,
+                  child: const Icon(Iconsax.heart_copy, color: Colors.black87),
                 );
               },
             ),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen()));
-            },
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen())),
           ),
           const SizedBox(width: 8),
         ],
@@ -55,33 +55,28 @@ class HomeScreen extends ConsumerWidget {
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // 1. Categories Strip
+          const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.only(top: 8), child: AutoSliderBanner())),
+          
           SliverToBoxAdapter(
-            child: Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: _buildCategories(context, categoriesState),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Text('Categories', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ),
+                  _buildCategoriesCarousel(context, categoriesState),
+                ],
+              ),
             ),
           ),
           
-          // 2. Auto-Sliding Banner
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: AutoSliderBanner(),
-            ),
-          ),
-          
-          // 3. Featured Products Horizontal Scroll
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16, bottom: 8),
-              child: _buildSectionHeader('Featured Products', context),
-            ),
-          ),
+          SliverToBoxAdapter(child: _buildSectionHeader('Featured Products', context)),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 240, // Standard card height
+              height: 250,
               child: featuredProductsState.when(
                 data: (products) => _buildFeaturedProducts(products),
                 loading: () => _buildFeaturedSkeleton(),
@@ -90,24 +85,14 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
           
-          // 4. Trending Grid
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 24, bottom: 8),
-              child: _buildSectionHeader('Trending Now', context),
-            ),
-          ),
+          SliverToBoxAdapter(child: _buildSectionHeader('Trending Now', context)),
           trendingProductsState.when(
             data: (products) => _buildTrendingGrid(products),
             loading: () => _buildTrendingSkeleton(),
-            error: (err, stack) => SliverToBoxAdapter(
-              child: Center(child: Text('Error: $err')),
-            ),
+            error: (err, stack) => SliverToBoxAdapter(child: Center(child: Text('Error: $err'))),
           ),
           
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 24),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
       ),
     );
@@ -115,38 +100,30 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildSearchBar(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
-      },
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen())),
       child: Container(
-        height: 38,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: const AbsorbPointer(
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Search for products...',
-              hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
-              prefixIcon: Icon(CupertinoIcons.search, color: Colors.grey, size: 20),
-              suffixIcon: Icon(Icons.mic, color: Colors.grey, size: 20),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-          ),
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(12)),
+        child: const Row(
+          children: [
+            Icon(Iconsax.search_normal_copy, color: Colors.grey, size: 20),
+            SizedBox(width: 12),
+            Text('Search products...', style: TextStyle(fontSize: 14, color: Colors.grey)),
+            Spacer(),
+            Icon(Iconsax.setting_4_copy, color: Colors.grey, size: 20),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildCategories(BuildContext context, AsyncValue<List<Category>> categoriesState) {
+  Widget _buildCategoriesCarousel(BuildContext context, AsyncValue<List<Category>> categoriesState) {
     return categoriesState.when(
       data: (categories) {
         if (categories.isEmpty) return const SizedBox.shrink();
-        
         return SizedBox(
-          height: 100,
+          height: 85,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -154,45 +131,31 @@ class HomeScreen extends ConsumerWidget {
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final category = categories[index];
-              return Padding(
-                padding: const EdgeInsets.only(right: 20),
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.only(right: 16),
                 child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProductListScreen(
-                          category: category.name,
-                          productCategoryId: category.id,
-                        ),
-                      ),
-                    );
-                  },
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProductListScreen(category: category.name, productCategoryId: category.id))),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
                         width: 60,
                         height: 60,
                         decoration: BoxDecoration(
+                          color: Colors.transparent,
                           shape: BoxShape.circle,
-                          color: Colors.grey.shade100,
-                          image: category.imageUrl != null 
-                            ? DecorationImage(
-                                image: NetworkImage(category.imageUrl!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
+                          image: (category.imageUrl != null && category.imageUrl!.isNotEmpty)
+                              ? DecorationImage(
+                                  image: NetworkImage(category.imageUrl!),
+                                  fit: BoxFit.cover)
+                              : null,
                         ),
-                        child: category.imageUrl == null 
-                          ? const Icon(CupertinoIcons.square_grid_2x2, size: 24, color: Colors.grey)
-                          : null,
+                        child: (category.imageUrl == null || category.imageUrl!.isEmpty)
+                            ? Icon(Iconsax.category_copy, size: 28, color: Theme.of(context).primaryColor)
+                            : null,
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        category.name,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                      ),
+                      Text(category.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black87)),
                     ],
                   ),
                 ),
@@ -201,35 +164,19 @@ class HomeScreen extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const SizedBox(
-        height: 100,
-        child: Center(child: CupertinoActivityIndicator()),
-      ),
+      loading: () => const SizedBox(height: 100, child: Center(child: CupertinoActivityIndicator())),
       error: (error, stack) => const SizedBox.shrink(),
     );
   }
 
   Widget _buildSectionHeader(String title, BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.secondary,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Text('VIEW ALL', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-          ),
+          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          TextButton(onPressed: () {}, child: Text('See All', style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.w600))),
         ],
       ),
     );
@@ -244,21 +191,11 @@ class HomeScreen extends ConsumerWidget {
       itemBuilder: (context, index) {
         final product = products[index];
         return Container(
-          width: 140, // Standard card width
-          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: 155,
+          margin: const EdgeInsets.symmetric(horizontal: 6),
           child: ProductCard(
-            id: product.id,
-            variantId: product.variantId,
-            title: product.title,
-            price: '\$${product.price.toStringAsFixed(2)}',
-            imageUrl: product.imageUrl,
-            rating: product.rating,
-            discount: product.discount,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)),
-              );
-            },
+            id: product.id, variantId: product.variantId, title: product.title, price: '\$${product.price.toStringAsFixed(2)}',imageUrl: product.imageUrl, rating: product.rating, discount: product.discount,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product))),
           ),
         );
       },
@@ -266,107 +203,67 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildFeaturedSkeleton() {
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      itemCount: 4,
-      itemBuilder: (context, index) {
-        return Container(
-          width: 140,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          child: const ProductCardSkeleton(),
-        );
-      },
-    );
+    return ListView.builder(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 12), itemCount: 4, itemBuilder: (context, index) => Container(width: 155, margin: const EdgeInsets.symmetric(horizontal: 6), child: const ProductCardSkeleton()));
   }
 
   Widget _buildTrendingGrid(List<Product> products) {
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 8.0,
-          crossAxisSpacing: 8.0,
-          childAspectRatio: 0.70, // Standard commerce fit
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (BuildContext context, int index) {
-            final product = products[index];
-            return ProductCard(
-              id: "trending_${product.id}",
-              variantId: product.variantId,
-              title: product.title,
-              price: '\$${product.price.toStringAsFixed(2)}',
-              imageUrl: product.imageUrl,
-              rating: product.rating,
-              discount: product.discount,
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)),
-                );
-              },
-            );
-          },
-          childCount: products.length,
-        ),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 0.72),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final product = products[index];
+          return ProductCard(id: "trending_${product.id}", variantId: product.variantId, title: product.title, price: '\$${product.price.toStringAsFixed(2)}', imageUrl: product.imageUrl, rating: product.rating, discount: product.discount, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product))));
+        }, childCount: products.length),
       ),
     );
   }
   
   Widget _buildTrendingSkeleton() {
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 8.0,
-          crossAxisSpacing: 8.0,
-          childAspectRatio: 0.70,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (BuildContext context, int index) {
-            return const ProductCardSkeleton();
-          },
-          childCount: 4,
-        ),
-      ),
-    );
+    return SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16), sliver: SliverGrid(gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 0.72), delegate: SliverChildBuilderDelegate((context, index) => const ProductCardSkeleton(), childCount: 4)));
   }
 }
 
 class AutoSliderBanner extends StatefulWidget {
   const AutoSliderBanner({super.key});
-
   @override
   State<AutoSliderBanner> createState() => _AutoSliderBannerState();
 }
 
 class _AutoSliderBannerState extends State<AutoSliderBanner> {
-  final PageController _pageController = PageController();
+  late PageController _pageController;
   int _currentPage = 0;
   Timer? _timer;
-
+  
   final List<String> _bannerImages = [
     'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800&q=80',
     'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=800&q=80',
     'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80',
+    'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800&q=80',
+    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80',
+    'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80',
   ];
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 4), (Timer timer) {
+    _pageController = PageController(initialPage: 0);
+    _startAutoScroll();
+  }
+
+  void _startAutoScroll() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
       if (_pageController.hasClients) {
-        if (_currentPage < _bannerImages.length - 1) {
-          _currentPage++;
-        } else {
-          _currentPage = 0;
+        int nextSelectedPage = _currentPage + 1;
+        if (nextSelectedPage >= _bannerImages.length) {
+          nextSelectedPage = 0;
         }
+        
         _pageController.animateToPage(
-          _currentPage,
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeIn,
+          nextSelectedPage,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeOutQuart,
         );
       }
     });
@@ -384,22 +281,31 @@ class _AutoSliderBannerState extends State<AutoSliderBanner> {
     return Column(
       children: [
         SizedBox(
-          height: 160,
+          height: 200,
           child: PageView.builder(
             controller: _pageController,
             onPageChanged: (index) {
-              setState(() => _currentPage = index);
+              setState(() {
+                _currentPage = index;
+              });
             },
             itemCount: _bannerImages.length,
             itemBuilder: (context, index) {
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(24),
                   image: DecorationImage(
                     image: NetworkImage(_bannerImages[index]),
                     fit: BoxFit.cover,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
               );
             },
@@ -412,12 +318,12 @@ class _AutoSliderBannerState extends State<AutoSliderBanner> {
             _bannerImages.length,
             (index) => AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              height: 6,
-              width: _currentPage == index ? 16 : 6,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              height: 8,
+              width: _currentPage == index ? 24 : 8,
               decoration: BoxDecoration(
                 color: _currentPage == index ? Theme.of(context).primaryColor : Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(3),
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
           ),

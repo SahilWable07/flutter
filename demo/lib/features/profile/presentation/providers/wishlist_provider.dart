@@ -12,20 +12,20 @@ class WishlistNotifier extends Notifier<List<Product>> {
   }
 
   Future<void> toggleWishlist(Product product) async {
+    // Optimistic Update
+    final previousState = state;
+    _toggleLocal(product);
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
-      if (token == null) {
-         _toggleLocal(product);
-         return;
-      }
+      
+      if (token == null) return;
       
       final parts = token.split('.');
-      if (parts.length != 3) {
-         _toggleLocal(product);
-         return;
-      }
+      if (parts.length != 3) return;
       
+      // Basic payload extraction
       final payloadRaw = base64Url.normalize(parts[1]);
       final payloadMap = json.decode(utf8.decode(base64Url.decode(payloadRaw)));
       
@@ -37,42 +37,30 @@ class WishlistNotifier extends Notifier<List<Product>> {
       final baseUrl = AppConfig.wishlistUrl(targetClientId);
       final url = Uri.parse('$baseUrl/wishlist/toggle');
 
-      print('Calling WISHLIST Toggle: $url');
-      
       final response = await http.post(
         url,
         headers: {
-          'Accept': '*/*',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Connection': 'keep-alive',
           'Content-Type': 'application/json',
-          'Origin': 'http://localhost:56024',
-          'Referer': 'http://localhost:56024/',
-          'Sec-Fetch-Dest': 'empty',
-          'Sec-Fetch-Mode': 'cors',
-          'Sec-Fetch-Site': 'cross-site',
-          'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36',
           'authorization': 'Bearer $token',
+          // Removed browser-specific hardcoded headers (Origin, Referer, User-Agent)
+          // to ensure cross-platform compatibility.
         },
         body: jsonEncode({
           "product_id": product.id,
           "user_id": userId,
           "client_id": targetClientId,
-          "product_variant_id": product.variantId.isNotEmpty ? product.variantId : "e16045cb-138d-4abc-ad79-f9d3d7d48425"
+          "product_variant_id": product.variantId.isNotEmpty ? product.variantId : "",
         }),
       );
 
-      print('WISHLIST Status: ${response.statusCode}');
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        _toggleLocal(product);
-      } else {
-        print('Wishlist Failure Body: ${response.body}');
-        _toggleLocal(product);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        // Rollback on failure if needed, but for wishlist, 
+        // we often keep the local state for better UX unless it's a critical error.
+        print('Wishlist Sync Failed: ${response.statusCode}');
       }
     } catch (e) {
-      print('Wishlist Error: $e');
-      _toggleLocal(product);
+      print('Wishlist Service Error: $e');
+      // Optional: state = previousState; // Rollback
     }
   }
 

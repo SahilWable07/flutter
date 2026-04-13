@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'home_screen.dart';
 import 'categories_screen.dart';
 import '../../../cart/presentation/screens/cart_screen.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
+import '../../../../shared/widgets/glass_container.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -19,95 +21,102 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const ProfileScreen(), // "You" tab
+    const ProfileScreen(),
     const CartScreen(),
-    const CategoriesScreen(), // "Menu" tab
+    const CategoriesScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      extendBody: true,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: KeyedSubtree(
+          key: ValueKey<int>(_currentIndex),
+          child: _screens[_currentIndex],
+        ),
       ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          height: 65,
-          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor,
-            borderRadius: BorderRadius.circular(35),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 15,
-                offset: const Offset(0, 8),
-              )
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNavItem(CupertinoIcons.home, 'Home', 0),
-              _buildNavItem(CupertinoIcons.person, 'You', 1),
-              _buildNavItem(CupertinoIcons.cart, 'Cart', 2, isCart: true),
-              _buildNavItem(Icons.grid_view, 'Menu', 3),
-            ],
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        child: GlassContainer(
+          borderRadius: 35,
+          blur: 20,
+          opacity: 0.1,
+          color: Colors.white,
+          child: Container(
+            height: 70,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildNavItem(Iconsax.home_1_copy, Iconsax.home_copy, "Home", 0, primaryColor),
+                _buildNavItem(Iconsax.user_copy, Iconsax.user_copy, "Profile", 1, primaryColor),
+                _buildNavItem(Iconsax.shopping_cart_copy, Iconsax.shopping_cart_copy, "Cart", 2, primaryColor, isCart: true),
+                _buildNavItem(Iconsax.menu_1_copy, Iconsax.menu_1_copy, "Menu", 3, primaryColor),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index, {bool isCart = false}) {
+  Widget _buildNavItem(IconData icon, IconData activeIcon, String label, int index, Color primaryColor, {bool isCart = false}) {
     final isSelected = _currentIndex == index;
 
     return GestureDetector(
-      behavior: HitTestBehavior.opaque,
       onTap: () => setState(() => _currentIndex = index),
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOutCubic,
-        padding: isSelected
-            ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
-            : const EdgeInsets.all(10),
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOutBack,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
-          borderRadius: BorderRadius.circular(25),
+          color: isSelected ? primaryColor.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 350),
-              transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
-              child: isCart
-                  ? Consumer(
-                      builder: (context, ref, child) {
-                        final count = ref.watch(cartCountProvider);
-                        return Badge.count(
-                          count: count,
-                          isLabelVisible: count > 0,
-                          backgroundColor: Colors.white,
-                          textColor: Theme.of(context).primaryColor,
-                          child: Icon(icon, key: ValueKey(isSelected), color: Colors.white, size: isSelected ? 24 : 22),
-                        );
-                      },
-                    )
-                  : Icon(icon, key: ValueKey(isSelected), color: Colors.white, size: isSelected ? 24 : 22),
-            ),
+            isCart
+                ? Consumer(
+                    builder: (context, ref, child) {
+                      final count = ref.watch(cartCountProvider);
+                      return Badge.count(
+                        count: count,
+                        isLabelVisible: count > 0,
+                        backgroundColor: primaryColor,
+                        child: Icon(
+                          isSelected ? activeIcon : icon,
+                          color: isSelected ? primaryColor : Colors.black54,
+                          size: 24,
+                        ),
+                      );
+                    },
+                  )
+                : Icon(
+                    isSelected ? activeIcon : icon,
+                    color: isSelected ? primaryColor : Colors.black54,
+                    size: 24,
+                  ),
             if (isSelected) ...[
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               AnimatedOpacity(
-                opacity: 1.0,
-                duration: const Duration(milliseconds: 350),
+                duration: const Duration(milliseconds: 300),
+                opacity: isSelected ? 1.0 : 0.0,
                 child: Text(
                   label,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              )
-            ]
+              ),
+            ],
           ],
         ),
       ),

@@ -1,55 +1,77 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class AnimatedPopup {
   static void show(BuildContext context, {required String message, IconData? icon, Color? color}) {
     final overlay = Overlay.of(context);
-    final overlayEntry = OverlayEntry(
-      builder: (context) => _AnimatedPopupWidget(
+    late OverlayEntry overlayEntry;
+    
+    overlayEntry = OverlayEntry(
+      builder: (context) => _ModernToastWidget(
         message: message,
-        icon: icon ?? Icons.check_circle,
-        color: color ?? Colors.green.shade700,
+        icon: icon ?? Icons.check_circle_rounded,
+        color: color ?? const Color(0xFF6366F1),
+        onDismiss: () => overlayEntry.remove(),
       ),
     );
 
     overlay.insert(overlayEntry);
-
-    Future.delayed(const Duration(seconds: 3), () {
-      overlayEntry.remove();
-    });
   }
 }
 
-class _AnimatedPopupWidget extends StatefulWidget {
+class _ModernToastWidget extends StatefulWidget {
   final String message;
   final IconData icon;
   final Color color;
+  final VoidCallback onDismiss;
 
-  const _AnimatedPopupWidget({required this.message, required this.icon, required this.color});
+  const _ModernToastWidget({
+    required this.message, 
+    required this.icon, 
+    required this.color, 
+    required this.onDismiss
+  });
 
   @override
-  State<_AnimatedPopupWidget> createState() => _AnimatedPopupWidgetState();
+  State<_ModernToastWidget> createState() => _ModernToastWidgetState();
 }
 
-class _AnimatedPopupWidgetState extends State<_AnimatedPopupWidget> with SingleTickerProviderStateMixin {
+class _ModernToastWidgetState extends State<_ModernToastWidget> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _offsetAnimation;
-  late Animation<double> _scaleAnimation;
+  bool _isDismissing = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
-    _offsetAnimation = Tween<Offset>(begin: const Offset(0, -1.5), end: const Offset(0, 0.1))
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _offsetAnimation = Tween<Offset>(
+      begin: const Offset(0, -1.5),
+      end: const Offset(0, 0),
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.fastOutSlowIn,
+    ));
 
     _controller.forward();
 
-    Future.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted) {
-        _controller.reverse();
+    // auto-dismiss after 3 seconds
+    Future.delayed(const Duration(milliseconds: 3000), () {
+      if (mounted && !_isDismissing) {
+        _dismiss();
       }
+    });
+  }
+
+  void _dismiss() {
+    if (_isDismissing) return;
+    _isDismissing = true;
+    _controller.reverse().then((_) {
+      if (mounted) widget.onDismiss();
     });
   }
 
@@ -62,35 +84,53 @@ class _AnimatedPopupWidgetState extends State<_AnimatedPopupWidget> with SingleT
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 16,
-      left: 16,
-      right: 16,
+      top: MediaQuery.of(context).padding.top + 20,
+      left: 20,
+      right: 20,
       child: Material(
         color: Colors.transparent,
         child: SlideTransition(
           position: _offsetAnimation,
-          child: ScaleTransition(
-            scale: _scaleAnimation,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: widget.color,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(color: widget.color.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4)),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Icon(widget.icon, color: Colors.white, size: 24),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      widget.message,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
+          child: Dismissible(
+            key: UniqueKey(),
+            direction: DismissDirection.horizontal,
+            onDismissed: (_) => widget.onDismiss(),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: widget.color.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: widget.color.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
-                ],
+                  child: Row(
+                    children: [
+                      Icon(widget.icon, color: Colors.white, size: 28),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          widget.message,
+                          style: const TextStyle(
+                            color: Colors.white, 
+                            fontWeight: FontWeight.w600, 
+                            fontSize: 16,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

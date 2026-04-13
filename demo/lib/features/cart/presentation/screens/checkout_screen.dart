@@ -12,6 +12,8 @@ import 'package:demo/features/order/presentation/providers/order_provider.dart';
 import 'package:demo/shared/utils/animated_popup.dart';
 import 'package:demo/core/services/payment_service.dart';
 import 'package:demo/core/config/app_config.dart';
+import 'package:demo/shared/widgets/status_views.dart';
+import 'package:demo/core/constants/app_spacing.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -30,12 +32,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final cartItems = ref.watch(cartProvider);
     final total = ref.watch(cartTotalProvider);
     final userInfoAsync = ref.watch(userInfoProvider);
+    final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
         title: const Text('Checkout', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
+        backgroundColor: Colors.white,
         elevation: 0,
       ),
       body: Stepper(
@@ -43,7 +47,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         currentStep: _currentStep,
         onStepContinue: () {
           if (_currentStep == 0 && _selectedAddress == null) {
-            AnimatedPopup.show(context, message: 'Please select an address', color: Colors.orange);
+            AnimatedPopup.show(context, message: 'Please select a delivery address', icon: Icons.location_on);
             return;
           }
           if (_currentStep == 1 && _selectedPayment == 'Online Payment') {
@@ -66,12 +70,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             padding: const EdgeInsets.only(top: 32),
             child: SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 56,
               child: ElevatedButton(
                 onPressed: details.onStepContinue,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: primaryColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 4,
+                  shadowColor: primaryColor.withOpacity(0.3),
                 ),
                 child: Text(
                   _currentStep == 1 && _selectedPayment == 'Online Payment'
@@ -87,19 +93,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         },
         steps: [
           Step(
-            title: const Text('Address'),
+            title: const Text('Address', style: TextStyle(fontSize: 12)),
             isActive: _currentStep >= 0,
             state: _currentStep > 0 ? StepState.complete : StepState.indexed,
             content: _buildAddressStep(userInfoAsync),
           ),
           Step(
-            title: const Text('Payment'),
+            title: const Text('Payment', style: TextStyle(fontSize: 12)),
             isActive: _currentStep >= 1,
             state: _currentStep > 1 ? StepState.complete : StepState.indexed,
             content: _buildPaymentStep(),
           ),
           Step(
-            title: const Text('Review'),
+            title: const Text('Review', style: TextStyle(fontSize: 12)),
             isActive: _currentStep >= 2,
             state: _currentStep > 2 ? StepState.complete : StepState.indexed,
             content: _buildReviewStep(cartItems, total),
@@ -116,21 +122,27 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         final addresses = addressRaw.map((a) => UserAddress.fromJson(a)).toList();
 
         if (addresses.isEmpty) {
-          return Column(
-            children: [
-              const Text('No addresses found'),
-              TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddressScreen())),
-                child: const Text('Add Address'),
-              ),
-            ],
+          return Center(
+            child: Column(
+              children: [
+                const Icon(CupertinoIcons.location_slash, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                const Text('No addresses found', style: TextStyle(color: Colors.grey)),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => _showAddressForm(context, allAddresses: addresses),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Address'),
+                ),
+              ],
+            ),
           );
         }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Select delivery address', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Delivery Address', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             ...addresses.map((addr) {
               final String addrId = '${addr.tag}_${addr.houseNo}_${addr.zipCode}';
@@ -138,35 +150,52 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ? '${_selectedAddress!.tag}_${_selectedAddress!.houseNo}_${_selectedAddress!.zipCode}' 
                   : '';
               
-              return RadioListTile<String>(
-                value: addrId,
-                groupValue: selectedId,
-                onChanged: (val) {
-                  setState(() {
-                    _selectedAddress = addr;
-                  });
-                },
-                title: Text(
-                  addr.tag.isNotEmpty ? addr.tag : 'Address', 
-                  style: const TextStyle(fontWeight: FontWeight.bold)
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: selectedId == addrId ? Theme.of(context).primaryColor : Colors.grey.shade200,
+                    width: 2,
+                  ),
                 ),
-                subtitle: Text('${addr.houseNo}, ${addr.street}, ${addr.city}'),
-                secondary: const Icon(CupertinoIcons.location, color: Colors.indigo),
-                activeColor: Colors.indigo,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                child: RadioListTile<String>(
+                  value: addrId,
+                  groupValue: selectedId,
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedAddress = addr;
+                    });
+                  },
+                  title: Text(
+                    addr.tag.isNotEmpty ? addr.tag : 'Address', 
+                    style: const TextStyle(fontWeight: FontWeight.bold)
+                  ),
+                  subtitle: Text('${addr.houseNo}, ${addr.street}, ${addr.city}'),
+                  secondary: Icon(CupertinoIcons.location_solid, color: selectedId == addrId ? Theme.of(context).primaryColor : Colors.grey),
+                  activeColor: Theme.of(context).primaryColor,
+                  contentPadding: const EdgeInsets.all(8),
+                ),
               );
             }),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
+            const SizedBox(height: 8),
+            TextButton.icon(
               onPressed: () => _showAddressForm(context, allAddresses: addresses),
-              icon: const Icon(Icons.add),
+              icon: const Icon(Icons.add_circle_outline),
               label: const Text('Add New Address'),
             ),
           ],
         );
       },
-      loading: () => const CupertinoActivityIndicator(),
-      error: (e, __) => Text('Error: $e'),
+      loading: () => const Padding(
+        padding: EdgeInsets.all(32.0),
+        child: Center(child: CupertinoActivityIndicator()),
+      ),
+      error: (e, __) => ErrorView(
+        message: 'Unable to load profile info. Please try again.',
+        onRetry: () => ref.refresh(userInfoProvider),
+      ),
     );
   }
 
@@ -180,27 +209,42 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 24),
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 32),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Add Delivery Address', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('New Address', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                ],
+              ),
               const SizedBox(height: 24),
-              _buildField('Tag (Home/Work)', tagController),
-              _buildField('House No', houseController),
-              _buildField('Street/Road', streetController),
-              _buildField('City', cityController),
-              _buildField('Zip Code', zipController),
+              _buildField('Tag (Home/Work)', tagController, icon: Icons.tag),
+              _buildField('House / Flat No', houseController, icon: Icons.home_outlined),
+              _buildField('Street / Locality', streetController, icon: Icons.map_outlined),
+              _buildField('City', cityController, icon: Icons.location_city_outlined),
+              _buildField('Zip Code', zipController, icon: Icons.pin_drop_outlined, isNumber: true),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 56,
                 child: ElevatedButton(
                   onPressed: () async {
+                    if (houseController.text.isEmpty || cityController.text.isEmpty || zipController.text.isEmpty) {
+                      AnimatedPopup.show(context, message: 'Please fill required fields', color: Colors.orange);
+                      return;
+                    }
+                    
                     final newAddress = UserAddress(
                       type: 'D',
                       tag: tagController.text,
@@ -223,10 +267,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       _selectedAddress = newAddress;
                     });
                   },
-                  child: const Text('Save & Select'),
+                  style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                  child: const Text('Save Address'),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -234,16 +279,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller) {
+  Widget _buildField(String label, TextEditingController controller, {IconData? icon, bool isNumber = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          prefixIcon: icon != null ? Icon(icon, size: 20) : null,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade200)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade100)),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: const Color(0xFFF9FAFB),
         ),
       ),
     );
@@ -253,25 +301,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Select payment method', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const Text('Payment Method', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
-        RadioListTile<String>(
-          value: 'Pay on Delivery',
-          groupValue: _selectedPayment,
-          onChanged: (val) => setState(() => _selectedPayment = val!),
-          title: const Text('Pay on Delivery'),
-          subtitle: const Text('Cash or UPI at your doorstep'),
-          secondary: const Icon(CupertinoIcons.money_dollar),
-        ),
-        RadioListTile<String>(
-          value: 'Online Payment',
-          groupValue: _selectedPayment,
-          onChanged: (val) => setState(() => _selectedPayment = val!),
-          title: const Text('Credit/Debit Card / UPI'),
-          subtitle: const Text('Fast & Secure checkout'),
-          secondary: const Icon(CupertinoIcons.creditcard),
-        ),
+        _buildPaymentOption('Pay on Delivery', 'Cash or UPI on delivery', CupertinoIcons.money_dollar_circle),
+        _buildPaymentOption('Online Payment', 'Fast & Secure checkout', CupertinoIcons.creditcard_fill),
       ],
+    );
+  }
+
+  Widget _buildPaymentOption(String value, String sub, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _selectedPayment == value ? Theme.of(context).primaryColor : Colors.grey.shade200, width: 2),
+      ),
+      child: RadioListTile<String>(
+        value: value,
+        groupValue: _selectedPayment,
+        onChanged: (val) => setState(() => _selectedPayment = val!),
+        title: Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(sub),
+        secondary: Icon(icon, color: _selectedPayment == value ? Theme.of(context).primaryColor : Colors.grey),
+        activeColor: Theme.of(context).primaryColor,
+      ),
     );
   }
 
@@ -281,34 +335,47 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       children: [
         const Text('Order Summary', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
-        ...items.map((item) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+          child: Column(
+            children: [
+              ...items.map((item) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+                          child: Text('${item.quantity}x', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(item.product.title, style: const TextStyle(fontSize: 14))),
+                        Text('\$${(item.product.price * item.quantity).toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  )),
+              const Divider(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('${item.quantity}x ', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Expanded(child: Text(item.product.title)),
-                  Text('\$${(item.product.price * item.quantity).toStringAsFixed(2)}'),
+                  const Text('Total Amount', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  Text('\$${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.indigo)),
                 ],
               ),
-            )),
-        const Divider(height: 32),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Total:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text('\$${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo)),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         if (_selectedAddress != null)
           Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.blue.withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.indigo.withOpacity(0.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.indigo.withOpacity(0.1))),
             child: Row(
               children: [
-                const Icon(CupertinoIcons.location, size: 16, color: Colors.indigo),
-                const SizedBox(width: 8),
-                Expanded(child: Text('Shipping to: ${_selectedAddress!.tag}, ${_selectedAddress!.city}', style: const TextStyle(fontSize: 12))),
+                const Icon(CupertinoIcons.location_solid, size: 18, color: Colors.indigo),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Shipping to: ${_selectedAddress!.houseNo}, ${_selectedAddress!.city}', style: const TextStyle(fontSize: 13, color: Colors.indigo, fontWeight: FontWeight.w500))),
               ],
             ),
           ),
@@ -323,7 +390,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       builder: (_) => const Center(child: CupertinoActivityIndicator()),
     );
 
-    // 1. Create the order on the backend
     String? orderId;
     try {
       orderId = await ref.read(ordersProvider.notifier).createOrder(
@@ -334,7 +400,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context); // close loader
-      AnimatedPopup.show(context, message: e.toString().replaceFirst('Exception: ', ''), color: Colors.orange);
+      AnimatedPopup.show(context, message: 'Process failed. Please verify your address info.', color: Colors.redAccent);
       return;
     }
 
@@ -346,13 +412,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
 
-    // 2. Handle Payment logic
     if (_selectedPayment == 'Online Payment') {
-      // Get auth data for payment API
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token') ?? '';
-      
-      // Parse clientId and userId from token
       String clientId = AppConfig.defaultClientId;
       String userId = '';
       try {
@@ -364,23 +426,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       } catch (_) {}
 
       final error = await PaymentService.processEasebuzzPayment(
-        clientId: clientId,
-        userId: userId,
-        token: token,
-        amount: total,
-        referenceId: orderId,
+        clientId: clientId, userId: userId, token: token, amount: total, referenceId: orderId,
       );
 
       if (error != null) {
         AnimatedPopup.show(context, message: error, color: Colors.red);
       } else {
-        // Redirection success
         ref.read(cartProvider.notifier).clearCart();
         Navigator.pop(context);
         AnimatedPopup.show(context, message: 'Redirecting to payment...');
       }
     } else {
-      // Cash on Delivery
       ref.read(cartProvider.notifier).clearCart();
       Navigator.pop(context);
       AnimatedPopup.show(context, message: 'Order placed successfully!');

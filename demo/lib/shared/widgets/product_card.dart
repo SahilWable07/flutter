@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/profile/presentation/providers/wishlist_provider.dart';
 import '../../features/product/domain/models/product.dart';
+import '../../core/constants/app_spacing.dart';
+import '../../shared/utils/animated_popup.dart';
 
 class ProductCard extends ConsumerWidget {
   final String id;
@@ -27,141 +30,167 @@ class ProductCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Check if this product is in the wishlist
-    final isWishlisted = ref.watch(wishlistProvider).any((item) => item.title == title); // title match for safety since id might vary slightly
+    final wishlist = ref.watch(wishlistProvider);
+    // Properly strip prefixes to identify the base product ID
+    final baseId = id.replaceAll('trending_', '').replaceAll('related_', '').replaceAll('wish_', '');
+    final isWishlisted = wishlist.any((item) => item.id == baseId);
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image Section
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Hero(
-                    tag: 'product_image_$id',
-                    child: imageUrl.isNotEmpty 
-                      ? Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(color: Colors.grey.shade200, child: const Icon(Icons.broken_image, color: Colors.grey)),
-                        )
-                      : Container(color: Colors.grey.shade200, child: const Icon(Icons.broken_image, color: Colors.grey)),
-                  ),
-                  if (discount.isNotEmpty && discount != '0')
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.indigo.withOpacity(0.08),
+            blurRadius: 20,
+            spreadRadius: 2,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12.0),
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image Section
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12.0)),
+                      child: Hero(
+                        tag: 'product_image_$id',
+                        child: imageUrl.isNotEmpty 
+                          ? Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(color: Colors.grey.shade100, child: const Icon(Icons.broken_image, color: Colors.grey)),
+                            )
+                          : Container(color: Colors.grey.shade100, child: const Icon(Icons.broken_image, color: Colors.grey)),
+                      ),
+                    ),
+                    if (discount.isNotEmpty && discount != '0')
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.secondary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '$discount% OFF',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    // Favorite Heart
                     Positioned(
                       top: 8,
-                      left: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.secondary, // Amazon Orange
-                          borderRadius: const BorderRadius.only(
-                            topRight: Radius.circular(4),
-                            bottomRight: Radius.circular(4),
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: () {
+                          final p = Product(
+                            id: baseId,
+                            variantId: variantId,
+                            title: title, 
+                            price: double.tryParse(price.replaceAll('\$', '')) ?? 0.0, 
+                            imageUrl: imageUrl, 
+                            rating: rating, 
+                            category: 'General', 
+                            discount: discount
+                          );
+                          ref.read(wishlistProvider.notifier).toggleWishlist(p);
+                          
+                          // Show Notification
+                          AnimatedPopup.show(
+                            context, 
+                            message: isWishlisted ? 'Removed from Wishlist' : 'Added to Wishlist!',
+                            icon: isWishlisted ? CupertinoIcons.heart : CupertinoIcons.heart_fill,
+                            color: isWishlisted ? Colors.grey : Colors.redAccent,
+                          );
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isWishlisted ? Icons.favorite : Icons.favorite_border,
+                            color: isWishlisted ? Colors.redAccent : Colors.grey,
+                            size: 20,
                           ),
                         ),
-                        child: Text(
-                          '$discount% OFF',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Details Section
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 14),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.star_rounded, color: Colors.amber.shade600, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          rating.toString(),
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      price,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: Theme.of(context).primaryColor,
+                        fontSize: 18,
                       ),
                     ),
-                  // Favorite Heart
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: GestureDetector(
-                      onTap: () {
-                        // Create a dummy product for toggling since we only have partial info here
-                        final p = Product(
-                          id: id.replaceFirst('trending_', '').replaceFirst('related_', ''), 
-                          variantId: variantId,
-                          title: title, 
-                          price: double.tryParse(price.replaceAll('\$', '')) ?? 0.0, 
-                          imageUrl: imageUrl, 
-                          rating: rating, 
-                          category: 'General', 
-                          discount: discount
-                        );
-                        ref.read(wishlistProvider.notifier).toggleWishlist(p);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isWishlisted ? Icons.favorite : Icons.favorite_border,
-                          color: isWishlisted ? Colors.pinkAccent : Colors.grey,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            // Details Section
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              rating.toString(),
-                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                            const Icon(Icons.star, color: Colors.white, size: 10),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    price,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

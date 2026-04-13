@@ -3,10 +3,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/product.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
+import '../../../cart/presentation/screens/cart_screen.dart';
+import '../../../cart/presentation/screens/checkout_screen.dart';
 import '../../../product/presentation/providers/product_providers.dart';
 import '../../../../shared/widgets/product_card.dart';
 import '../../../../shared/utils/animated_popup.dart';
 import '../../../profile/presentation/providers/wishlist_provider.dart';
+import '../../../../core/constants/app_spacing.dart';
+import '../../../../shared/widgets/glass_container.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final Product product;
@@ -22,253 +26,190 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   void _handleAddToCart() async {
     if (_isAddingToCart) return;
-    
     setState(() => _isAddingToCart = true);
-    
-    // 1. Fire the async API call update!
     await ref.read(cartProvider.notifier).addToCart(widget.product);
-    
     if (!mounted) return;
-    
-    AnimatedPopup.show(context, message: 'Added to Cart!');
-    
+    AnimatedPopup.show(context, message: 'Added to Cart!', icon: CupertinoIcons.cart_fill);
     setState(() => _isAddingToCart = false);
+  }
+
+  void _handleBuyNow() async {
+    await ref.read(cartProvider.notifier).addToCart(widget.product);
+    if (!mounted) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const CheckoutScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     final relatedProductsState = ref.watch(trendingProductsProvider);
-    // 1. Observe Wishlist state
-    final isWishlisted = ref.watch(wishlistProvider).any((item) => item.id == widget.product.id || item.title == widget.product.title);
-
-    // 2. Fire the API call specific to this product to get full details properly!
+    final isWishlisted = ref.watch(wishlistProvider).any((item) => item.id == widget.product.id);
     final detailState = ref.watch(productDetailProvider(widget.product.id));
-    
-    // 3. Gracefully fall back to the initial list-view product data while loading or if it fails
     final currentProduct = detailState.value ?? widget.product;
+    final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        actions: [
-          IconButton(
-            icon: Icon(
-              isWishlisted ? CupertinoIcons.heart_fill : CupertinoIcons.heart,
-              color: isWishlisted ? Colors.pinkAccent : Colors.black87,
+      extendBodyBehindAppBar: true,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(80),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: SafeArea(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+                    child: const Icon(CupertinoIcons.chevron_left, size: 22),
+                  ),
+                ),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        ref.read(wishlistProvider.notifier).toggleWishlist(widget.product);
+                        AnimatedPopup.show(context, message: isWishlisted ? 'Removed' : 'Wishlisted', icon: isWishlisted ? CupertinoIcons.heart : CupertinoIcons.heart_fill, color: isWishlisted ? Colors.grey : Colors.redAccent);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+                        child: Icon(isWishlisted ? CupertinoIcons.heart_fill : CupertinoIcons.heart, color: isWishlisted ? Colors.redAccent : Colors.black87, size: 22),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen())),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            final count = ref.watch(cartCountProvider);
+                            return Badge.count(count: count, isLabelVisible: count > 0, child: const Icon(CupertinoIcons.cart, size: 22));
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            onPressed: () {
-              ref.read(wishlistProvider.notifier).toggleWishlist(widget.product);
-              AnimatedPopup.show(
-                context, 
-                message: isWishlisted ? 'Removed from Wishlist' : 'Saved to Wishlist!', 
-                icon: isWishlisted ? CupertinoIcons.heart : CupertinoIcons.heart_fill, 
-                color: isWishlisted ? Colors.grey : Colors.pinkAccent
-              );
-            },
           ),
-          IconButton(
-            icon: const Icon(CupertinoIcons.cart),
-            onPressed: () {
-              // Navigation to cart remains if desired, but user focused on Wishlist in Home.
-              // I'll keep this as contextually flexible.
-            },
-          ),
-        ],
+        ),
       ),
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Elegant Image Carousel Area
           SliverToBoxAdapter(
             child: Hero(
               tag: 'product_image_${currentProduct.id}',
               child: Container(
-                height: 350,
+                height: 450,
                 width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 1)),
-                ),
-                child: currentProduct.imageUrl.isNotEmpty 
-                  ? Image.network(
-                      currentProduct.imageUrl,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.image, size: 100, color: Colors.grey),
-                    )
-                  : const Icon(Icons.image, size: 100, color: Colors.grey),
+                padding: const EdgeInsets.only(top: 100, bottom: 40),
+                decoration: const BoxDecoration(color: Color(0xFFF9FAFB), borderRadius: BorderRadius.vertical(bottom: Radius.circular(50))),
+                child: currentProduct.imageUrl.isNotEmpty ? Image.network(currentProduct.imageUrl, fit: BoxFit.contain) : const Icon(Icons.image, size: 100, color: Colors.grey),
               ),
             ),
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
-                  Text(
-                    currentProduct.title,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w500,
-                      height: 1.3,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Rating Section
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)), child: Text('Official Store', style: TextStyle(color: primaryColor, fontSize: 12, fontWeight: FontWeight.bold))),
                       Row(
-                        children: List.generate(5, (index) {
-                          return Icon(
-                            index < currentProduct.rating.floor() ? Icons.star : Icons.star_border,
-                            color: Colors.amber,
-                            size: 20,
-                          );
-                        }),
+                        children: [
+                          const Icon(Icons.star_rounded, color: Colors.amber, size: 20),
+                          const SizedBox(width: 4),
+                          Text(currentProduct.rating.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold)),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        currentProduct.rating.toStringAsFixed(1),
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
-                      ),
-                      const Text('  (324 Ratings)', style: TextStyle(color: Colors.blue)),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
-                  // Price Tag
+                  Text(currentProduct.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.black87)),
+                  const SizedBox(height: 12),
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      if (currentProduct.discount.isNotEmpty)
-                        Text(
-                          '-${currentProduct.discount}% ',
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.normal, color: Colors.red),
-                        ),
-                      Text(
-                        '\$${currentProduct.price.toStringAsFixed(2)}',
-                        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                      ),
+                      Text('\$${currentProduct.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: primaryColor)),
+                      const SizedBox(width: 12),
+                      if (currentProduct.discount.isNotEmpty) Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(8)), child: Text('-${currentProduct.discount}%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14))),
                     ],
                   ),
-                  const SizedBox(height: 24),
-
-                  // Divider
-                  Divider(color: Colors.grey.shade300, thickness: 1),
-                  const SizedBox(height: 16),
-                  
-                  // Dynamic Description from the specific API!
-                  const Text(
-                    'About this item',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Loading state or real text
-                  detailState.when(
-                    data: (fullProduct) => Text(
-                      fullProduct.description.isNotEmpty ? fullProduct.description : 'No description available.',
-                      style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.6),
-                    ),
-                    loading: () => const Center(child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: CircularProgressIndicator(),
-                    )),
-                    error: (e, stack) => Text('Could not load extra details.', style: TextStyle(color: Colors.red.shade400)),
-                  ),
-                  
                   const SizedBox(height: 32),
-                  const Text(
-                    'Related Products',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  const Text('Description', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  detailState.when(
+                    data: (fullProduct) => Text(fullProduct.description.isNotEmpty ? fullProduct.description : 'Premium quality product with comfortable materials and elegant design. Perfect for daily use.', style: TextStyle(color: Colors.black54, height: 1.6, fontSize: 15)),
+                    loading: () => const Center(child: CupertinoActivityIndicator()),
+                    error: (e, _) => const Text('Details currently unavailable.'),
                   ),
+                  const SizedBox(height: 32),
+                  const Text('Related Products', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                 ],
               ),
             ),
           ),
-          
-          // Related Products List
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 250,
+              height: 260,
               child: relatedProductsState.when(
-                data: (products) {
-                  return ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: products.length,
-                    itemBuilder: (context, index) {
-                      final p = products[index];
-                      // Avoid showing the exact same product
-                      if (p.id == widget.product.id) return const SizedBox.shrink(); 
-                      
-                      return Container(
-                        width: 140,
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        child: ProductCard(
-                          id: 'related_${p.id}',
-                          variantId: p.variantId,
-                          title: p.title,
-                          price: '\$${p.price.toStringAsFixed(2)}',
-                          imageUrl: p.imageUrl,
-                          rating: p.rating,
-                          discount: p.discount,
-                          onTap: () {
-                            Navigator.pushReplacement(
-                              context,
-                              PageRouteBuilder(
-                                pageBuilder: (_, __, ___) => ProductDetailScreen(product: p),
-                                transitionsBuilder: (_, animation, __, child) {
-                                  return FadeTransition(opacity: animation, child: child);
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
+                data: (products) => ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                    final p = products[index];
+                    if (p.id == widget.product.id) return const SizedBox.shrink();
+                    return Container(width: 160, margin: const EdgeInsets.only(right: 16), child: ProductCard(id: 'related_${p.id}', variantId: p.variantId, title: p.title, price: '\$${p.price.toStringAsFixed(2)}', imageUrl: p.imageUrl, rating: p.rating, discount: p.discount, onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ProductDetailScreen(product: p)))));
+                  },
+                ),
+                loading: () => const Center(child: CupertinoActivityIndicator()),
+                error: (e, _) => const SizedBox.shrink(),
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 120)), // Space for sticky bottom bar
+          const SliverToBoxAdapter(child: SizedBox(height: 140)),
         ],
       ),
       bottomSheet: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade300)),
-        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: const BorderRadius.vertical(top: Radius.circular(32)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))]),
         child: SafeArea(
-          child: SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _handleAddToCart,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFD814), // Classic Amazon Yellow Add To Cart
-                foregroundColor: Colors.black,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(100), // fully rounded pill
-                  side: const BorderSide(color: Color(0xFFFCD200)),
+          child: Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 60,
+                  child: OutlinedButton(
+                    onPressed: _handleAddToCart,
+                    style: OutlinedButton.styleFrom(side: BorderSide(color: primaryColor, width: 2), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                    child: _isAddingToCart ? const CupertinoActivityIndicator() : const Text('Add to Cart', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
                 ),
               ),
-              child: _isAddingToCart 
-                ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-                : const Text('Add to Cart', style: TextStyle(fontSize: 16, fontWeight: FontWeight.normal)),
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: SizedBox(
+                  height: 60,
+                  child: ElevatedButton(
+                    onPressed: _handleBuyNow,
+                    style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                    child: const Text('Buy Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
