@@ -194,7 +194,7 @@ class HomeScreen extends ConsumerWidget {
           width: 155,
           margin: const EdgeInsets.symmetric(horizontal: 6),
           child: ProductCard(
-            id: product.id, variantId: product.variantId, title: product.title, price: '\$${product.price.toStringAsFixed(2)}',imageUrl: product.imageUrl, rating: product.rating, discount: product.discount,
+            id: product.id, variantId: product.variantId, title: product.title, price: '₹${product.price.toStringAsFixed(2)}',imageUrl: product.imageUrl, rating: product.rating, discount: product.discount,
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product))),
           ),
         );
@@ -213,7 +213,7 @@ class HomeScreen extends ConsumerWidget {
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 0.72),
         delegate: SliverChildBuilderDelegate((context, index) {
           final product = products[index];
-          return ProductCard(id: "trending_${product.id}", variantId: product.variantId, title: product.title, price: '\$${product.price.toStringAsFixed(2)}', imageUrl: product.imageUrl, rating: product.rating, discount: product.discount, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product))));
+          return ProductCard(id: "trending_${product.id}", variantId: product.variantId, title: product.title, price: '₹${product.price.toStringAsFixed(2)}', imageUrl: product.imageUrl, rating: product.rating, discount: product.discount, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product))));
         }, childCount: products.length),
       ),
     );
@@ -278,10 +278,13 @@ class _AutoSliderBannerState extends State<AutoSliderBanner> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final bannerHeight = screenHeight * 0.28; // Responsive height
+
     return Column(
       children: [
         SizedBox(
-          height: 200,
+          height: bannerHeight,
           child: PageView.builder(
             controller: _pageController,
             onPageChanged: (index) {
@@ -292,18 +295,18 @@ class _AutoSliderBannerState extends State<AutoSliderBanner> {
             itemCount: _bannerImages.length,
             itemBuilder: (context, index) {
               return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
+                margin: const EdgeInsets.symmetric(horizontal: 4), // Minimal margin for that 'edge-to-edge' feel
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.zero, // Requested square border
                   image: DecorationImage(
                     image: NetworkImage(_bannerImages[index]),
                     fit: BoxFit.cover,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 15,
-                      offset: const Offset(0, 8),
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
@@ -311,19 +314,19 @@ class _AutoSliderBannerState extends State<AutoSliderBanner> {
             },
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
             _bannerImages.length,
             (index) => AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 400),
               margin: const EdgeInsets.symmetric(horizontal: 4),
               height: 8,
-              width: _currentPage == index ? 24 : 8,
+              width: _currentPage == index ? 32 : 12,
               decoration: BoxDecoration(
-                color: _currentPage == index ? Theme.of(context).primaryColor : Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(4),
+                color: _currentPage == index ? const Color(0xFF6366F1) : Colors.grey.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),

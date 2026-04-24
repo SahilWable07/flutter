@@ -37,16 +37,14 @@ class AuthWrapper extends ConsumerWidget {
 
     if (authState.isLoading) {
       return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
+        body: SafeArea(
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
         ),
       );
     }
 
-    if (authState.user != null) {
-      return const MainScreen();
-    }
-
-    return const LoginScreen();
+    return authState.user != null ? const MainScreen() : const LoginScreen();
   }
 }

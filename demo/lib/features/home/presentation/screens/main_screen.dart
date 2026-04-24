@@ -7,6 +7,7 @@ import 'categories_screen.dart';
 import '../../../cart/presentation/screens/cart_screen.dart';
 import '../../../cart/presentation/providers/cart_provider.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
+import '../../../order/presentation/screens/orders_screen.dart';
 import '../../../../shared/widgets/glass_container.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
@@ -21,16 +22,19 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const ProfileScreen(),
-    const CartScreen(),
     const CategoriesScreen(),
+    const OrdersScreen(),
+    const CartScreen(),
+    const ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true,
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
@@ -40,7 +44,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         ),
       ),
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        margin: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding > 0 ? bottomPadding : 24),
         child: GlassContainer(
           borderRadius: 35,
           blur: 20,
@@ -48,14 +52,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           color: Colors.white,
           child: Container(
             height: 70,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildNavItem(Iconsax.home_1_copy, Iconsax.home_copy, "Home", 0, primaryColor),
-                _buildNavItem(Iconsax.user_copy, Iconsax.user_copy, "Profile", 1, primaryColor),
-                _buildNavItem(Iconsax.shopping_cart_copy, Iconsax.shopping_cart_copy, "Cart", 2, primaryColor, isCart: true),
-                _buildNavItem(Iconsax.menu_1_copy, Iconsax.menu_1_copy, "Menu", 3, primaryColor),
+                Expanded(child: _buildNavItem(Iconsax.home_1_copy, Iconsax.home_copy, "Home", 0, primaryColor)),
+                Expanded(child: _buildNavItem(Iconsax.menu_copy, Iconsax.menu_copy, "Menu", 1, primaryColor)),
+                Expanded(child: _buildNavItem(Iconsax.box_copy, Iconsax.box_copy, "Orders", 2, primaryColor)),
+                Expanded(child: _buildNavItem(Iconsax.shopping_cart_copy, Iconsax.shopping_cart_copy, "Cart", 3, primaryColor, isCart: true)),
+                Expanded(child: _buildNavItem(Iconsax.user_copy, Iconsax.user_copy, "Profile", 4, primaryColor)),
               ],
             ),
           ),
@@ -73,52 +78,50 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOutBack,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? primaryColor.withOpacity(0.15) : Colors.transparent,
+          color: isSelected ? primaryColor.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            isCart
-                ? Consumer(
-                    builder: (context, ref, child) {
-                      final count = ref.watch(cartCountProvider);
-                      return Badge.count(
-                        count: count,
-                        isLabelVisible: count > 0,
-                        backgroundColor: primaryColor,
-                        child: Icon(
-                          isSelected ? activeIcon : icon,
-                          color: isSelected ? primaryColor : Colors.black54,
-                          size: 24,
-                        ),
-                      );
-                    },
-                  )
-                : Icon(
-                    isSelected ? activeIcon : icon,
-                    color: isSelected ? primaryColor : Colors.black54,
-                    size: 24,
-                  ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 300),
-                opacity: isSelected ? 1.0 : 0.0,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: primaryColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          isCart
+              ? Consumer(
+                  builder: (context, ref, child) {
+                    final count = ref.watch(cartCountProvider);
+                    return Badge.count(
+                      count: count,
+                      isLabelVisible: count > 0,
+                      backgroundColor: primaryColor,
+                      child: Icon(
+                        isSelected ? activeIcon : icon,
+                        color: isSelected ? primaryColor : Colors.black54,
+                        size: 22,
+                      ),
+                    );
+                  },
+                )
+              : Icon(
+                  isSelected ? activeIcon : icon,
+                  color: isSelected ? primaryColor : Colors.black54,
+                  size: 22,
                 ),
+          if (isSelected) ...[
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(
+                color: primaryColor,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
               ),
-            ],
+            ),
           ],
-        ),
+        ],
+      ),
       ),
     );
   }

@@ -6,11 +6,23 @@ import '../../../product/presentation/screens/product_detail_screen.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../shared/widgets/glass_container.dart';
 
-class WishlistScreen extends ConsumerWidget {
+class WishlistScreen extends ConsumerStatefulWidget {
   const WishlistScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WishlistScreen> createState() => _WishlistScreenState();
+}
+
+class _WishlistScreenState extends ConsumerState<WishlistScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Explicit API call when entering the screen
+    Future.microtask(() => ref.read(wishlistProvider.notifier).fetchWishlist());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final wishlist = ref.watch(wishlistProvider);
 
     return Scaffold(
@@ -53,42 +65,46 @@ class WishlistScreen extends ConsumerWidget {
               ],
             ),
           )
-        : GridView.builder(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.m, 110, AppSpacing.m, AppSpacing.m),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: AppSpacing.m,
-              mainAxisSpacing: AppSpacing.m,
-              childAspectRatio: 0.72,
-            ),
-            itemCount: wishlist.length,
-            itemBuilder: (context, index) {
-              final product = wishlist[index];
-              return AnimatedScale(
-                scale: 1.0,
-                duration: const Duration(milliseconds: 300),
-                child: ProductCard(
-                  id: 'wish_${product.id}',
-                  variantId: product.variantId,
-                  title: product.title,
-                  price: '\$${product.price.toStringAsFixed(2)}',
-                  imageUrl: product.imageUrl,
-                  rating: product.rating,
-                  discount: product.discount,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (context, animation, _) => ProductDetailScreen(product: product),
-                        transitionsBuilder: (context, animation, _, child) {
-                          return FadeTransition(opacity: animation, child: child);
-                        },
-                      ),
-                    );
-                  },
+        : RefreshIndicator(
+            onRefresh: () => ref.read(wishlistProvider.notifier).fetchWishlist(),
+            child: GridView.builder(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.m, 110, AppSpacing.m, AppSpacing.m),
+                physics: const AlwaysScrollableScrollPhysics(), // Important for RefreshIndicator
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: AppSpacing.m,
+                  mainAxisSpacing: AppSpacing.m,
+                  childAspectRatio: 0.72,
                 ),
-              );
-            },
+                itemCount: wishlist.length,
+                itemBuilder: (context, index) {
+                  final product = wishlist[index];
+                  return AnimatedScale(
+                    scale: 1.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: ProductCard(
+                      id: 'wish_${product.id}',
+                      variantId: product.variantId,
+                      title: product.title,
+                      price: '₹${product.price.toStringAsFixed(2)}',
+                      imageUrl: product.imageUrl,
+                      rating: product.rating,
+                      discount: product.discount,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder: (context, animation, _) => ProductDetailScreen(product: product),
+                            transitionsBuilder: (context, animation, _, child) {
+                              return FadeTransition(opacity: animation, child: child);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
           ),
     );
   }

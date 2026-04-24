@@ -24,6 +24,32 @@ class Product {
     this.stockQuantity = 0,
   });
 
+  Product copyWith({
+    String? id,
+    String? variantId,
+    String? title,
+    double? price,
+    String? imageUrl,
+    double? rating,
+    String? discount,
+    String? category,
+    String? description,
+    int? stockQuantity,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      variantId: variantId ?? this.variantId,
+      title: title ?? this.title,
+      price: price ?? this.price,
+      imageUrl: imageUrl ?? this.imageUrl,
+      rating: rating ?? this.rating,
+      discount: discount ?? this.discount,
+      category: category ?? this.category,
+      description: description ?? this.description,
+      stockQuantity: stockQuantity ?? this.stockQuantity,
+    );
+  }
+
   // Factory for potential JSON parsing later
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(

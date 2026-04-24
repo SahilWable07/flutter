@@ -209,9 +209,18 @@ class CartNotifier extends Notifier<List<CartItem>> {
                 img =
                     pJson['media'][0]['media_url'] ??
                     pJson['media'][0]['url'] ??
+                    pJson['media'][0]['image_url'] ??
                     '';
               }
-              if (img.isEmpty) img = pJson['imageUrl'] ?? '';
+              if (img.isEmpty) {
+                img = pJson['imageUrl'] ?? 
+                      pJson['image_url'] ?? 
+                      pJson['image'] ?? 
+                      pJson['thumb'] ?? 
+                      pJson['thumbnail'] ?? 
+                      pJson['base_url'] ?? 
+                      '';
+              }
 
               final product = Product(
                 id: pId,

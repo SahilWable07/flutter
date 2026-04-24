@@ -111,7 +111,7 @@ class ProductCard extends ConsumerWidget {
                             id: baseId,
                             variantId: variantId,
                             title: title, 
-                            price: double.tryParse(price.replaceAll('\$', '')) ?? 0.0, 
+                            price: double.tryParse(price.replaceAll('\$', '').replaceAll('₹', '')) ?? 0.0, 
                             imageUrl: imageUrl, 
                             rating: rating, 
                             category: 'General', 
@@ -180,7 +180,7 @@ class ProductCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      price,
+                      price.replaceAll('\$', '₹'),
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: Theme.of(context).primaryColor,
                         fontSize: 18,

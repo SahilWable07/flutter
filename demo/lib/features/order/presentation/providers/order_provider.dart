@@ -75,6 +75,64 @@ class OrderNotifier extends Notifier<List<Order>> {
     }
   }
 
+  Future<void> fetchOrders() async {
+    final authData = await _getAuthData();
+    if (authData == null) return;
+
+    try {
+      final clientId = authData['clientId'];
+      final token = authData['token'];
+
+      final url = Uri.parse('${AppConfig.orderUrl(clientId)}/orders/list');
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(token: token, includeContentType: true),
+        body: jsonEncode({"page": 1, "limit": 10}),
+      );
+
+      print('Fetch Orders Response: ${response.statusCode}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        final List<dynamic> data = (decoded['data'] is Map) 
+            ? (decoded['data']['rows'] ?? []) 
+            : (decoded['data'] ?? []);
+        
+        final fetchedOrders = data.map((json) {
+          return Order(
+            id: json['id']?.toString() ?? '',
+            billNumber: json['bill_number']?.toString() ?? 'Unknown',
+            date: DateTime.tryParse(json['order_date']?.toString() ?? '') ?? DateTime.now(),
+            totalAmount: double.tryParse(json['total_amount']?.toString() ?? '0') ?? 0.0,
+            status: _parseStatus(json['order_status']?.toString()),
+            items: [],
+          );
+        }).toList();
+
+        state = fetchedOrders;
+      }
+    } catch (e) {
+      print('Fetch Orders Error: $e');
+    }
+  }
+
+  OrderStatus _parseStatus(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'confirmed':
+      case 'pending':
+        return OrderStatus.pending;
+      case 'processing':
+      case 'shipped':
+        return OrderStatus.processing;
+      case 'delivered':
+        return OrderStatus.delivered;
+      case 'cancelled':
+        return OrderStatus.cancelled;
+      default:
+        return OrderStatus.pending;
+    }
+  }
+
   Future<String?> createOrder({
     required List<CartItem> cartItems,
     required double total,
@@ -122,7 +180,7 @@ class OrderNotifier extends Notifier<List<Order>> {
         "payment_method": "cash",
         "payment_status": "pending",
         "paid_amount": 0,
-        "gst": 0, // Global GST usually 0 as items have their own
+        "gst": 0,
         "shipping_fee": 0,
         "order_status": "confirmed",
         "tracking_number": trackNum,
@@ -193,6 +251,7 @@ class OrderNotifier extends Notifier<List<Order>> {
 
         final mockOrder = Order(
           id: orderId ?? billNum,
+          billNumber: billNum,
           date: DateTime.now(),
           items: List.from(cartItems),
           totalAmount: total,
@@ -212,6 +271,48 @@ class OrderNotifier extends Notifier<List<Order>> {
       print('Order API Error: $e');
       rethrow;
     }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchOrderTimeline(String orderId) async {
+    final authData = await _getAuthData();
+    if (authData == null) return [];
+
+    try {
+      final clientId = authData['clientId'];
+      final token = authData['token'];
+      
+      // Constructing URL according to the exact cURL pattern
+      final url = Uri.parse('${AppConfig.orderUrl(clientId)}/order/$orderId/order-timeline');
+      
+      print('Fetching Timeline: $url');
+
+      final response = await http.get(
+        url,
+        headers: await _getHeaders(token: token, includeContentType: true),
+      );
+
+      print('Timeline Status: ${response.statusCode}');
+      print('Timeline Body: ${response.body}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        
+        // Comprehensive data extraction
+        final dynamic d = decoded['data'];
+        List<dynamic> timelineRaw = [];
+        
+        if (d != null) {
+          timelineRaw = (d is List) ? d : (d['rows'] ?? d['timeline'] ?? d['events'] ?? []);
+        } else {
+          timelineRaw = decoded['rows'] ?? decoded['timeline'] ?? decoded['events'] ?? [];
+        }
+
+        return timelineRaw.map((e) => e as Map<String, dynamic>).toList();
+      }
+    } catch (e) {
+      print('Timeline API Exception: $e');
+    }
+    return [];
   }
 }
 

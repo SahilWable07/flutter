@@ -42,14 +42,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final relatedProductsState = ref.watch(trendingProductsProvider);
-    final isWishlisted = ref.watch(wishlistProvider).any((item) => item.id == widget.product.id);
-    final detailState = ref.watch(productDetailProvider(widget.product.id));
+    
+    // Properly handle prefixed IDs for wishlist consistency
+    final baseId = widget.product.id.replaceAll('trending_', '').replaceAll('related_', '').replaceAll('wish_', '');
+    final isWishlisted = ref.watch(wishlistProvider).any((item) => item.id == baseId);
+    
+    final detailState = ref.watch(productDetailProvider(baseId));
     final currentProduct = detailState.value ?? widget.product;
     final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
       backgroundColor: Colors.white,
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: false,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
         child: Padding(
@@ -70,7 +74,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   children: [
                     GestureDetector(
                       onTap: () {
-                        ref.read(wishlistProvider.notifier).toggleWishlist(widget.product);
+                        // Create a version of the product with the clean Base ID for toggling
+                        final toggleProduct = widget.product.copyWith(id: baseId);
+                        ref.read(wishlistProvider.notifier).toggleWishlist(toggleProduct);
                         AnimatedPopup.show(context, message: isWishlisted ? 'Removed' : 'Wishlisted', icon: isWishlisted ? CupertinoIcons.heart : CupertinoIcons.heart_fill, color: isWishlisted ? Colors.grey : Colors.redAccent);
                       },
                       child: Container(
@@ -109,7 +115,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               child: Container(
                 height: 450,
                 width: double.infinity,
-                padding: const EdgeInsets.only(top: 100, bottom: 40),
+                padding: const EdgeInsets.only(top: 20, bottom: 40),
                 decoration: const BoxDecoration(color: Color(0xFFF9FAFB), borderRadius: BorderRadius.vertical(bottom: Radius.circular(50))),
                 child: currentProduct.imageUrl.isNotEmpty ? Image.network(currentProduct.imageUrl, fit: BoxFit.contain) : const Icon(Icons.image, size: 100, color: Colors.grey),
               ),
@@ -139,7 +145,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Text('\$${currentProduct.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: primaryColor)),
+                      Text('₹${currentProduct.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: primaryColor)),
                       const SizedBox(width: 12),
                       if (currentProduct.discount.isNotEmpty) Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(8)), child: Text('-${currentProduct.discount}%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14))),
                     ],
